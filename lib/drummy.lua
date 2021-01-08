@@ -82,10 +82,10 @@ function Drummy:new(args)
   o.lattice:start()
 
   -- load the samples
-  engine.sample1file("/home/we/dust/code/drummy/samples/kick1.wav")
-  engine.sample2file("/home/we/dust/code/drummy/samples/snare1.wav")
-  engine.sample3file("/home/we/dust/code/drummy/samples/shaker1.wav")
-  engine.sample4file("/home/we/dust/code/drummy/samples/ch1.wav")
+  engine.samplefile(1,"/home/we/dust/code/drummy/samples/kick1.wav")
+  engine.samplefile(2,"/home/we/dust/code/drummy/samples/snare1.wav")
+  engine.samplefile(3,"/home/we/dust/code/drummy/samples/shaker1.wav")
+  engine.samplefile(4,"/home/we/dust/code/drummy/samples/ch1.wav")
 
 
   return o
@@ -110,8 +110,7 @@ function Drummy:sixteenth_note(t)
 			trig = self.pattern[self.current_pattern].track[i].trig[self.pattern[self.current_pattern].track[i].pos[1]][self.pattern[self.current_pattern].track[i].pos[2]]
 			if trig.active and not self.pattern[self.current_pattern].track[i].muted and math.random() < trig.probability then 
 				-- emit 
-				local f = load("engine.sample"..i.."play(1)")
-				f()
+				engine.play(i)
 				self.track_playing[i]=true
 			end
 		end
@@ -225,6 +224,9 @@ end
 
 function Drummy:press_track(track)
 	self.track_current = track 
+	if not self.is_playing then 
+		engine.play(track)
+	end
 end
 
 function Drummy:press_mute(track)
@@ -276,9 +278,7 @@ function Drummy:press_trig(row,col)
 		end
 	end
 	self.pattern[self.current_pattern].track[self.track_current].trig[row][col].selected = true
-	self.pattern[self.current_pattern].track[self.track_current].trig[row][col].active = true
-
-	
+	self.pattern[self.current_pattern].track[self.track_current].trig[row][col].active = true	
 end
 
 
