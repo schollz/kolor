@@ -3,6 +3,40 @@ local Drummy = {}
 
 engine.name="Drummy"
 
+local effect_available = {
+  	volume = {default=8,values={}},
+  	pitch = {default=8,values={-2,-1.5,-1.25,-1,-0.75,-0.5,-0.25,0,0.25,0.5,0.75,1,1.25,1.5,2}},
+  	pan = {default=8,values={-7/7,-6/7,-5/7,-4/7,-3/7,-2/7,-1/7,0,1/7,2/7,3/7,4/7,5/7,6/7,7/7}},
+  	lpf = {default=15,values={}},
+  	resonance = {default=8,values={}},
+  	hpf = {default=1,values={}},
+  	sample_start = {default=0,values={}},
+  	sample_length = {default=15,values={}},
+  	retrig = {default=0,values={}},
+  	lfo_speed = {default=0,values={}},
+  	delay = {default=0,values={}},
+  	reverb = {default=0,values={}},
+  	probability = {default=12,values={}},
+}
+for i=1,15 do 
+	effect_available.volume.values[i]=(i-1)/15
+	effect_available.lpf.values[i]=40*math.pow(1.5,i)
+	effect_available.resonance.values[i]=(4*i)/15
+	effect_available.hpf.values[i]=40*math.pow(1.5,i)
+	effect_available.sample_start.values[i]=3*i/15
+	effect_available.sample_length.values[i]=3*i/15
+	effect_available.retrig.values[i]=i 
+	effect_available.lfo_speed.values[i]=i
+	effect_available.delay.values[i]=i
+	effect_available.reverb.values[i]=i
+	effect_available.probability.values[i]=i/15
+end
+
+local function get_effect(effectname,index)
+	-- index ranges between 0 and 15 
+	return effect_available[effectname].values[index]
+end
+
 --- instantiate a new drummy
 -- @tparam[opt] table args optional named attributes are:
 -- - "auto" (boolean) turn off "auto" pulses from the norns clock, defaults to true
@@ -10,20 +44,25 @@ engine.name="Drummy"
 -- - "ppqn" (number) the number of pulses per quarter note of this superclock, defaults to 96
 -- @treturn table a new lattice
 function Drummy:new(args)
+
+	-- setup object
   local o = setmetatable({}, { __index = Drummy })
   local args = args == nil and {} or args
-  o.meter = args.meter == nil and 4 or args.meter
 
+  o.meter = args.meter == nil and 4 or args.meter
   o.is_playing = false 
   o.is_recording = false
   o.pressed_trig_area = false 
   o.pressed_row_top = false 
   o.pressed_row_effect = false 
   o.pressed_buttons = {}
-  o.effects_last = {
-  	velocity=0.5,
-  	probability=0.95,
-  }
+  o.effect_last = {}
+  for k,e in pairs(effect_available) do
+  	o.effect_last[k] = e.default
+  	if #e.values < 15 then 
+  		print("UH OH "..k.." DOES NOT HAVE 15 VALUES")
+  	end
+  end
   o.visual = {}
   for i=1,8 do 
   	o.visual[i] = {} 
@@ -49,20 +88,22 @@ function Drummy:new(args)
 	  	o.pattern[i].track[j] = {
 	  		muted=false,
 	  		pos={1,1},
-	  		pos_max={4,16},
+	  		pos_max={1,16},
 	  		trig={},
 	  	}
 	  	-- fill in default trigs
 	  	for row=1,4 do 
   			o.pattern[i].track[j].trig[row]={}
 	  		for col=1,64 do
-	  			local effects = {table.unpack(o.effects_last)}
 	  			o.pattern[i].track[j].trig[row][col]={
 	  				playing=false,
 	  				selected=false,
 	  				active=false,
-	  				probability=0.95,
+	  				effect={},
 	  			}
+	  			for k,v in pairs(o.effect_last) do 
+		  			o.pattern[i].track[j].trig[row][col].effect[k]=v
+	  			end
 	  		end
 	  	end
   	end
@@ -108,8 +149,12 @@ function Drummy:sixteenth_note(t)
 			end
 			-- TODO emit track if something is there
 			trig = self.pattern[self.current_pattern].track[i].trig[self.pattern[self.current_pattern].track[i].pos[1]][self.pattern[self.current_pattern].track[i].pos[2]]
-			if trig.active and not self.pattern[self.current_pattern].track[i].muted and math.random() < trig.probability then 
+			if trig.active and not self.pattern[self.current_pattern].track[i].muted and math.random() < effect_available.probability.values[trig.effect.probability] then 
 				-- emit 
+				tab.print(trig)
+				print("effect:")
+				tab.print(trig.effect)
+				print("---")
 				engine.play(i,1.0,2*(math.random()-0.5))
 				self.track_playing[i]=true
 			end
