@@ -5,37 +5,68 @@ local Drummy = {}
 engine.name="Drummy"
 
 local effect_available = {
-  	volume = {default=8,values={}},
-  	pitch = {default=8,values={-2,-1.5,-1.25,-1,-0.75,-0.5,-0.25,0,0.25,0.5,0.75,1,1.25,1.5,2}},
-  	pan = {default=8,values={-7/7,-6/7,-5/7,-4/7,-3/7,-2/7,-1/7,0,1/7,2/7,3/7,4/7,5/7,6/7,7/7}},
-  	lpf = {default=15,values={}},
-  	resonance = {default=8,values={}},
-  	hpf = {default=1,values={}},
-  	sample_start = {default=0,values={}},
-  	sample_length = {default=15,values={}},
-  	retrig = {default=0,values={}},
-  	lfo_speed = {default=0,values={}},
-  	delay = {default=0,values={}},
-  	reverb = {default=0,values={}},
-  	probability = {default=12,values={}},
+  	volume = {default={8,nil},value={}},
+  	pitch = {default={8,nil},value={-2,-1.5,-1.25,-1,-0.75,-0.5,-0.25,0,0.25,0.5,0.75,1,1.25,1.5,2}},
+  	pan = {default={7,9},value={-7/7,-6/7,-5/7,-4/7,-3/7,-2/7,-1/7,0,1/7,2/7,3/7,4/7,5/7,6/7,7/7}},
+  	lpf = {default={15,nil},value={}},
+  	resonance = {default={8,nil},value={}},
+  	hpf = {default={1,nil},value={}},
+  	sample_start = {default={0,nil},value={}},
+  	sample_length = {default={15,nil},value={}},
+  	retrig = {default={0,nil},value={}},
+  	delay = {default={0,nil},value={}},
+  	reverb = {default={0,nil},value={}},
+  	probability = {default={12,nil},value={}},
+}
+
+local effect_order = {
+	"volume",
+	"pitch",
+	"pan",
+	"lpf",
+	"resonance",
+	"hpf",
+	"sample_start",
+	"sample_length",
+	"retrig",
+	"delay",
+	"reverb",
+	"volume",
+	"probability",
 }
 for i=1,15 do 
-	effect_available.volume.values[i]=(i-1)/15
-	effect_available.lpf.values[i]=40*math.pow(1.5,i)
-	effect_available.resonance.values[i]=(4*i)/15
-	effect_available.hpf.values[i]=40*math.pow(1.5,i)
-	effect_available.sample_start.values[i]=3*i/15
-	effect_available.sample_length.values[i]=3*i/15
-	effect_available.retrig.values[i]=i 
-	effect_available.lfo_speed.values[i]=i
-	effect_available.delay.values[i]=i
-	effect_available.reverb.values[i]=i
-	effect_available.probability.values[i]=i/15
+	effect_available.volume.value[i]=(i-1)/15
+	effect_available.lpf.value[i]=40*math.pow(1.5,i)
+	effect_available.resonance.value[i]=(4*i)/15
+	effect_available.hpf.value[i]=40*math.pow(1.5,i)
+	effect_available.sample_start.value[i]=3*i/15
+	effect_available.sample_length.value[i]=3*i/15
+	effect_available.retrig.value[i]=i 
+	effect_available.delay.value[i]=i
+	effect_available.reverb.value[i]=i
+	effect_available.probability.value[i]=i/15
 end
 
-local function get_effect(effectname,index)
+local function random_float(lower, greater)
+    return lower + math.random()  * (greater - lower);
+end
+
+local function get_effect(trig,effectname)
 	-- index ranges between 0 and 15 
-	return effect_available[effectname].values[index]
+	-- tab.print(trig)
+	-- print(effectname,"1",trig.effect[effectname].value[1])
+	-- print(effectname,"2",trig.effect[effectname].value[2])
+	local effect_value = effect_available[effectname].value[trig.effect[effectname].value[1]]
+	if trig.effect[effectname].value[2] ~= nil then 
+		-- have range
+		if trig.effect[effectname].lfo ~= 0 then 
+			-- TODO calcualte and return lfo modulated value 
+		else
+			-- no LFO? but have range? generate a random value in the range
+			effect_value = random_float(effect_value,effect_available[effectname].value[trig.effect[effectname].value[2]])
+		end
+	end 
+	return effect_value
 end
 
 --- instantiate a new drummy
@@ -55,13 +86,15 @@ function Drummy:new(args)
   o.is_recording = false
   o.pressed_trig_area = false 
   o.pressed_row_top = false 
-  o.pressed_row_effect = false 
   o.pressed_buttons = {}
+  o.pressed_buttons_scale = {}
+  o.selected_trig=nil
+  o.effect_id_selected=0
   o.effect_last = {}
   for k,e in pairs(effect_available) do
-  	o.effect_last[k] = e.default
-  	if #e.values < 15 then 
-  		print("UH OH "..k.." DOES NOT HAVE 15 VALUES")
+  	o.effect_last[k] = {value=e.default,lfo=0}
+  	if #e.value < 15 then 
+  		print("UH OH "..k.." DOES NOT HAVE 15 value")
   	end
   end
   o.visual = {}
@@ -103,7 +136,7 @@ function Drummy:new(args)
 	  				effect={},
 	  			}
 	  			for k,v in pairs(o.effect_last) do 
-		  			o.pattern[i].track[j].trig[row][col].effect[k]=v
+		  			o.pattern[i].track[j].trig[row][col].effect[k]={value={v.value[1],v.value[2]},lfo=v.lfo}
 	  			end
 	  		end
 	  	end
@@ -151,7 +184,7 @@ end
 function Drummy:sixteenth_note(t)
 	self.beat_current = t 
 	if self.is_playing then 
-		print(self.beat_current-self.beat_started)
+		-- print(self.beat_current-self.beat_started)
 		for i,_ in ipairs(self.pattern[self.current_pattern].track) do 
 			self.track_playing[i] = false 
 			self.pattern[self.current_pattern].track[i].pos[2] = self.pattern[self.current_pattern].track[i].pos[2] + 1
@@ -164,22 +197,30 @@ function Drummy:sixteenth_note(t)
 			end
 			-- TODO emit track if something is there
 			trig = self.pattern[self.current_pattern].track[i].trig[self.pattern[self.current_pattern].track[i].pos[1]][self.pattern[self.current_pattern].track[i].pos[2]]
-			if trig.active and not self.pattern[self.current_pattern].track[i].muted and math.random() < effect_available.probability.values[trig.effect.probability] then 
+			if trig.active and not self.pattern[self.current_pattern].track[i].muted and math.random() < get_effect(trig,"probability") then 
 				-- emit 
-				tab.print(trig)
-				print("effect:")
-				tab.print(trig.effect)
-				print("---")
-				engine.play(i,1.0,2*(math.random()-0.5))
-				self.track_playing[i]=true
+				d:play_trig(i,trig)
 			end
 		end
 	end
 	-- print("sixteenth_note ",t) 
 end
 
+function Drummy:play_trig(i,trig)
+	self.track_playing[i]=true
+	local volume = get_effect(trig,"volume")
+	local pan = get_effect(trig,"pan")
+	engine.play(i,volume,pan)
+end
+
 -- returns the visualization of the matrix
 function Drummy:get_grid()
+	local current_pos = self.pattern[self.current_pattern].track[self.track_current].pos
+	local trig_selected = nil  
+	if self.selected_trig ~= nil then 
+		trig_selected = self.pattern[self.current_pattern].track[self.track_current].trig[self.selected_trig[1]][self.selected_trig[2]]		
+	end
+
 	-- clear visual
 	for row=1,8 do 
 		for col=1,16 do 
@@ -189,7 +230,7 @@ function Drummy:get_grid()
 
 	-- show graphic, hijacks everything!
 	if self.show_graphic[2] > 0 then 
-		-- d.show_graphic={"volume",3}
+		-- d.show_graphic={"lfo",3}
 		pixels = graphic_pixels.pixels(self.show_graphic[1])
 		for _,p in ipairs(pixels) do 
 			self.visual[p[1]][p[2]]=p[3]
@@ -198,10 +239,28 @@ function Drummy:get_grid()
 	end
 
 	-- draw top bar gradient
-	if self.pressed_row_effect then 
-		for i=0,15 do 
-			self.visual[5][i+1]=i
+	if self.effect_id_selected > 0 then 
+		self.visual[6][self.effect_id_selected+1]=15
+		for i=0,14 do 
+			self.visual[5][i+2]=i
 		end
+		-- if trig is selected, then show the current value
+		local e = self.effect_last[effect_order[self.effect_id_selected]]
+		if trig_selected ~= nil then 
+			e = trig_selected.effect[effect_order[self.effect_id_selected]]
+		end
+		local value = e.value
+		if value[2] == nil then 
+			self.visual[5][value[1]+1]=15
+		else
+			for j=value[1],value[2] do 
+				self.visual[5][j+1]=15
+			end
+		end
+		-- show the lfo
+		if e.lfo > 0 then 
+			self.visual[5][1] = 15 -- TODO set to the level of the lfo
+		end		
 	else
 		for i=0,16 do 
 			if (i-1)%4 == 0 then 
@@ -266,7 +325,7 @@ function Drummy:get_grid()
 	return self.visual
 end
 
--- set a key
+-- update the state depending on what was pressed
 function Drummy:key_press(row,col,on)
 	if on then 
 		self.pressed_buttons[row..","..col]=true
@@ -274,9 +333,12 @@ function Drummy:key_press(row,col,on)
 		self.pressed_buttons[row..","..col]=nil
 	end
 
-
-	if row==5 then 
-		self.pressed_row_top = on 
+	if row == 5 and col == 1 and self.effect_id_selected>0 and on then 
+		-- toggle lfo setting 
+	elseif row == 5 and col > 1 and self.effect_id_selected>0  then 
+		self:update_effect(col-1,on)
+	elseif row == 6 and col > 1 and on then 
+		self:press_effect(col-1)
 	elseif row >= 1 and row <= 4 and on then 
 		self:press_trig(row,col)
 	elseif row==6 and col==1 then 
@@ -292,8 +354,64 @@ function Drummy:key_press(row,col,on)
 	end
 end
 
+
+function Drummy:update_effect(scale_id,on)
+	print("update_effect")
+	-- scale_id is between 1 and 15 
+
+	-- update buttons
+	if on then 
+		self.pressed_buttons_scale[scale_id] = true 
+	else
+		self.pressed_buttons_scale[scale_id] = nil 
+		do return end
+	end
+
+	-- determine which buttons are being held
+	buttons_held = {}
+	for k,_ in pairs(self.pressed_buttons_scale) do
+		table.insert(buttons_held,k)
+	end
+	table.sort(buttons_held)
+	if #buttons_held < 1 then 
+		print("no buttons?")
+		do return end
+	end
+	local value = {buttons_held[1],nil}
+	if #buttons_held > 1 then 
+		value = {buttons_held[1],buttons_held[#buttons_held]}
+	end
+	print(value[1])
+	print(value[2])
+
+	if self.selected_trig ~= nil then 
+		-- simple case, update selected trig 
+		print("updating selected trig effect '"..effect_order[self.effect_id_selected].."' at ("..self.selected_trig[1]..","..self.selected_trig[2]..")")
+		tab.print(self.pattern[self.current_pattern].track[self.track_current].trig[self.selected_trig[1]][self.selected_trig[2]].effect[effect_order[self.effect_id_selected]])
+		self.pattern[self.current_pattern].track[self.track_current].trig[self.selected_trig[1]][self.selected_trig[2]].effect[effect_order[self.effect_id_selected]].value = value 
+	else
+		-- update the cache
+		print("updating cache effect")
+		self.effect_last.value = value 
+	end
+end
+
+function Drummy:press_effect(effect_id)
+	print("press_effect "..effect_id)
+	self.pressed_buttons_scale = {} -- reset scale
+	if self.effect_id_selected == effect_id then 
+		self.effect_id_selected = 0
+		do return end 
+	end
+	self.effect_id_selected = effect_id
+	self.show_graphic = {effect_order[effect_id],3}
+end
+
+-- TODO: press_pattern should destory selected trig
+
 function Drummy:press_track(track)
 	self.track_current = track 
+	self.selected_trig = nil
 	if not self.is_playing then 
 		engine.play(track,1.0,0)
 	end
@@ -335,6 +453,7 @@ function Drummy:press_trig(row,col)
 		do return end 
 	end
 
+	self.selected_trig = nil
 	if self.pattern[self.current_pattern].track[self.track_current].trig[row][col].selected then 
 		self.pattern[self.current_pattern].track[self.track_current].trig[row][col].selected = false
 		self.pattern[self.current_pattern].track[self.track_current].trig[row][col].active = false
@@ -349,6 +468,13 @@ function Drummy:press_trig(row,col)
 	end
 	self.pattern[self.current_pattern].track[self.track_current].trig[row][col].selected = true
 	self.pattern[self.current_pattern].track[self.track_current].trig[row][col].active = true	
+	self.selected_trig = {row,col}
+	-- the last effect should correspond to this trig 
+
+	self.effect_last = {}
+	for k,e in pairs(self.pattern[self.current_pattern].track[self.track_current].trig[row][col].effect) do 
+		self.effect_last[k] = {value=e.value,lfo=e.lfo}
+	end
 end
 
 

@@ -76,7 +76,11 @@ function enc(k,d)
 end
 
 function key(k,z)
-  d:key_press(position[1],position[2],z==1)
+  if k==2 and z==1 then 
+    d:key_press(position[1],position[2],false)
+  elseif k==3 and z==1 then 
+    d:key_press(position[1],position[2],true)
+  end
 end
 
 function grid_redraw_clock() -- our grid redraw clock
