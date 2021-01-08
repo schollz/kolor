@@ -272,6 +272,7 @@ function Drummy:get_grid()
 			self.visual[5][1] = 15 -- TODO set to the level of the lfo
 		end		
 	else
+		-- show beats along the track
 		for i=0,16 do 
 			if (i-1)%4 == 0 then 
 				self.visual[5][i]=14
@@ -292,7 +293,18 @@ function Drummy:get_grid()
 				self.visual[row][col] = 3 
 			end
 		end
-	end				
+	end	
+
+	-- if trig selected, illuminate the status of the effects
+	if trig_selected ~= nil then 
+		for i,k in ipairs(effect_order) do 
+			local e = trig_selected.effect[effect_order[i]]
+			self.visual[6][i+1] = e.value[1]
+			if e.value[2] ~= nil then 
+				self.visual[6][i+1] = self.visual[6][i+1] + self.blink*(e.value[2]-e.value[1])
+			end
+		end
+	end			
 
 	-- illuminate currently playing trig on currently selected track
 	if self.is_playing and self.pattern[self.current_pattern].track[self.track_current].pos[2] > 0 then 
