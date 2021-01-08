@@ -1,4 +1,5 @@
 lattice = include("lib/lattice")
+graphic_pixels = include("lib/pixels")
 local Drummy = {}
 
 engine.name="Drummy"
@@ -128,8 +129,22 @@ function Drummy:new(args)
   engine.samplefile(3,"/home/we/dust/code/drummy/samples/shaker1.wav")
   engine.samplefile(4,"/home/we/dust/code/drummy/samples/ch1.wav")
 
+  -- debouncing 
+  o.show_graphic = {nil,0}
+  o.debouncer = metro.init()
+  o.debouncer.time = 0.2
+  o.debouncer.event = function()
+  	o:debounce()
+	end
+	o.debouncer:start()
 
   return o
+end
+
+function Drummy:debounce()
+	if self.show_graphic[2] > 0 then 
+		 self.show_graphic[2] = self.show_graphic[2] - 1
+	end
 end
 
 -- sixteenth note is played
@@ -170,6 +185,16 @@ function Drummy:get_grid()
 		for col=1,16 do 
 			self.visual[row][col]=0
 		end
+	end
+
+	-- show graphic, hijacks everything!
+	if self.show_graphic[2] > 0 then 
+		-- d.show_graphic={"volume",3}
+		pixels = graphic_pixels.pixels(self.show_graphic[1])
+		for _,p in ipairs(pixels) do 
+			self.visual[p[1]][p[2]]=p[3]
+		end
+		do return self.visual end
 	end
 
 	-- draw top bar gradient
