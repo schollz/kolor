@@ -111,6 +111,7 @@ function Drummy:new(args)
   for i=1,9 do 
   	o.pattern[i] = {}
   	o.pattern[i].next_pattern={}
+  	o.pattern[i].trigs_active=0
   	for j=1,9 do 
 	  	o.pattern[i].next_pattern[j] = 0
 	  	if i==j then 
@@ -162,19 +163,28 @@ function Drummy:new(args)
   engine.samplefile(3,"/home/we/dust/code/drummy/samples/shaker1.wav")
   engine.samplefile(4,"/home/we/dust/code/drummy/samples/ch1.wav")
 
-  -- debouncing 
+  -- debouncing and blinking
+  o.blink = 0
+  o.blink_countdown = 2
   o.show_graphic = {nil,0}
   o.debouncer = metro.init()
   o.debouncer.time = 0.2
   o.debouncer.event = function()
   	o:debounce()
-	end
-	o.debouncer:start()
+  end
+  o.debouncer:start()
 
   return o
 end
 
 function Drummy:debounce()
+	if self.blink_countdown > 0 then 
+		self.blink_countdown = self.blink_countdown - 1 
+		if self.blink_countdown <= 0 then 
+			self.blink_countdown = 2 
+			self.blink = 1 - self.blink
+		end 
+	end
 	if self.show_graphic[2] > 0 then 
 		 self.show_graphic[2] = self.show_graphic[2] - 1
 	end
@@ -238,7 +248,7 @@ function Drummy:get_grid()
 		do return self.visual end
 	end
 
-	-- draw top bar gradient
+	-- draw bar gradient / scale
 	if self.effect_id_selected > 0 then 
 		self.visual[6][self.effect_id_selected+1]=15
 		for i=0,14 do 
@@ -284,7 +294,7 @@ function Drummy:get_grid()
 		end
 	end				
 
-	-- illuminate currently playing trig on currnetly selected track
+	-- illuminate currently playing trig on currently selected track
 	if self.is_playing and self.pattern[self.current_pattern].track[self.track_current].pos[2] > 0 then 
 		self.visual[self.pattern[self.current_pattern].track[self.track_current].pos[1]][self.pattern[self.current_pattern].track[self.track_current].pos[2]] = self.visual[self.pattern[self.current_pattern].track[self.track_current].pos[1]][self.pattern[self.current_pattern].track[self.track_current].pos[2]]  + 7
 		if self.visual[self.pattern[self.current_pattern].track[self.track_current].pos[1]][self.pattern[self.current_pattern].track[self.track_current].pos[2]] > 15 then 
@@ -292,15 +302,30 @@ function Drummy:get_grid()
 		end
 	end
 
-	-- illuminate non-muted tracks, show if they are playing
+	-- illuminate non-muted tracks, show if they are playing, blink if selected
 	for i,track in ipairs(self.pattern[self.current_pattern].track) do 
 		if not track.muted then 
-			self.visual[8][i+1] = 4
+			self.visual[8][i+1] = 5
 			if self.track_playing[i] and self.is_playing then 
 				self.visual[8][i+1] = 14
 			end
+		else
+			self.visual[8][i+1] = 1
+		end
+		if i==self.track_current then 
+			self.visual[8][i+1] = self.visual[8][i+1] *self.blink 
 		end
 	end
+
+	-- illuminate patterns (active and not active)
+	for i=1,9 do 
+		if self.current_pattern == i then 
+			self.visual[8][i+7] = 15 
+		elseif self.pattern[i].trigs_active > 0 then 
+			self.visual[8][i+7] = 4
+		end
+	end
+
 
 	-- draw buttons
 	if self.is_playing then 
@@ -351,9 +376,15 @@ function Drummy:key_press(row,col,on)
 		self:press_track(col-1)
 	elseif row==7 and col >= 2 and col <= 7 and on then 
 		self:press_mute(col-1)
+	elseif row==8 and col >= 8 and on then 
+		self:press_pattern(col-7)
 	end
 end
 
+
+function Drummy:press_pattern(pattern_id)
+	self.current_pattern = pattern_id
+end
 
 function Drummy:update_effect(scale_id,on)
 	print("update_effect")
@@ -457,6 +488,7 @@ function Drummy:press_trig(row,col)
 	if self.pattern[self.current_pattern].track[self.track_current].trig[row][col].selected then 
 		self.pattern[self.current_pattern].track[self.track_current].trig[row][col].selected = false
 		self.pattern[self.current_pattern].track[self.track_current].trig[row][col].active = false
+		self.pattern[self.current_pattern].trigs_active = self.pattern[self.current_pattern].trigs_active - 1
 		do return end
 	end
 
@@ -467,6 +499,9 @@ function Drummy:press_trig(row,col)
 		end
 	end
 	self.pattern[self.current_pattern].track[self.track_current].trig[row][col].selected = true
+	if not self.pattern[self.current_pattern].track[self.track_current].trig[row][col].active then
+		self.pattern[self.current_pattern].trigs_active = self.pattern[self.current_pattern].trigs_active + 1
+	end
 	self.pattern[self.current_pattern].track[self.track_current].trig[row][col].active = true	
 	self.selected_trig = {row,col}
 	-- the last effect should correspond to this trig 
