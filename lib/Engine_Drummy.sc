@@ -38,9 +38,9 @@ Engine_Drummy : CroneEngine {
 			sampleBuff[msg[1]-1] = Buffer.read(context.server,msg[2]);
 		});
 
-		this.addCommand("play","i", { arg msg;
+		this.addCommand("play","iff", { arg msg;
 			// lua is sending 1-index
-			samplerPlayer[msg[1]-1].set(\t_trig,1,\amp,1.0);
+			samplerPlayer[msg[1]-1].set(\t_trig,1,\amp,msg[2],\pan,msg[3]);
 		});
 
 	}

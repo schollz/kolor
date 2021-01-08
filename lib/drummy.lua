@@ -110,7 +110,7 @@ function Drummy:sixteenth_note(t)
 			trig = self.pattern[self.current_pattern].track[i].trig[self.pattern[self.current_pattern].track[i].pos[1]][self.pattern[self.current_pattern].track[i].pos[2]]
 			if trig.active and not self.pattern[self.current_pattern].track[i].muted and math.random() < trig.probability then 
 				-- emit 
-				engine.play(i)
+				engine.play(i,1.0,2*(math.random()-0.5))
 				self.track_playing[i]=true
 			end
 		end
@@ -225,7 +225,7 @@ end
 function Drummy:press_track(track)
 	self.track_current = track 
 	if not self.is_playing then 
-		engine.play(track)
+		engine.play(track,1.0,0)
 	end
 end
 
