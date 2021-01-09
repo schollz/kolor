@@ -31,7 +31,6 @@ local effect_order = {
 	"retrig",
 	"delay",
 	"reverb",
-	"volume",
 	"probability",
 }
 for i=1,15 do 
@@ -219,8 +218,14 @@ end
 function Drummy:play_trig(i,trig)
 	self.track_playing[i]=true
 	local volume = get_effect(trig,"volume")
+	local pitch = get_effect(trig,"pitch")
 	local pan = get_effect(trig,"pan")
-	engine.play(i,volume,pan)
+	local lpf = get_effect(trig,"lpf")
+	local resonance = get_effect(trig,"resonance")
+	local hpf = get_effect(trig,"hpf")
+	local sample_start = get_effect(trig,"sample_start")
+	local sample_length = get_effect(trig,"sample_length")
+	engine.play(i,volume,pitch,rate,pan,lpf,resonance,hpf,sample_start,sample_length)
 end
 
 -- returns the visualization of the matrix
