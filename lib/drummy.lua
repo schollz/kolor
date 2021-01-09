@@ -110,8 +110,8 @@ function Drummy:new(args)
   o.pattern = {}
   for i=1,9 do 
   	o.pattern[i] = {}
-  	o.pattern[i].next_pattern={}
   	o.pattern[i].trigs_active=0
+  	o.pattern[i].next_pattern={}
   	for j=1,9 do 
 	  	o.pattern[i].next_pattern[j] = 0
 	  	if i==j then 
@@ -344,6 +344,10 @@ function Drummy:get_grid()
 		end
 	end
 
+	-- illuminate markov probability for next pattern
+	for i=1,9 do 
+		self.visual[7][i+7] = self.pattern[self.current_pattern].next_pattern[i]*5
+	end
 
 	-- draw buttons
 	if self.is_playing then 
@@ -377,9 +381,11 @@ function Drummy:key_press(row,col,on)
 	end
 
 	if row == 5 and col == 1 and self.effect_id_selected>0 and on then 
-		-- toggle lfo setting 
+		-- TODO toggle lfo setting 
 	elseif row == 5 and col > 1 and self.effect_id_selected>0  then 
 		self:update_effect(col-1,on)
+	elseif row == 5 and self.effect_id_selected==0  then 
+		self.selected_trig = nil
 	elseif row == 6 and col > 1 and on then 
 		self:press_effect(col-1)
 	elseif row >= 1 and row <= 4 and on then 
@@ -396,9 +402,17 @@ function Drummy:key_press(row,col,on)
 		self:press_mute(col-1)
 	elseif row==8 and col >= 8 and on then 
 		self:press_pattern(col-7)
+	elseif row==7 and col >= 8 and on then 
+		self:press_chain_pattern(col-7)
 	end
 end
 
+function Drummy:press_chain_pattern(pattern_id)
+	self.pattern[self.current_pattern].next_pattern[pattern_id] = self.pattern[self.current_pattern].next_pattern[pattern_id] + 1 
+	if self.pattern[self.current_pattern].next_pattern[pattern_id] > 3 then 
+		self.pattern[self.current_pattern].next_pattern[pattern_id] = 0 
+	end
+end
 
 function Drummy:press_pattern(pattern_id)
 	self.selected_trig = nil

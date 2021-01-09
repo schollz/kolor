@@ -77,9 +77,9 @@ end
 
 function key(k,z)
   if k==2 and z==1 then 
-    d:key_press(position[1],position[2],false)
-  elseif k==3 and z==1 then 
     d:key_press(position[1],position[2],true)
+  elseif k==3 then 
+    d:key_press(position[1],position[2],z==1)
   end
 end
 
