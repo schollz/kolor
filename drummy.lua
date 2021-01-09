@@ -38,7 +38,8 @@ function init()
     for i,track in ipairs(p) do
       d:press_track(i)
       for _, v in ipairs(track) do 
-        d:press_trig(row,v)
+        d:key_press(row,v,true)
+        d:key_press(row,v,false)
       end
     end
   end

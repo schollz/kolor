@@ -6,17 +6,17 @@ engine.name="Drummy"
 
 local effect_available = {
   	volume = {default={8,nil},value={}},
-  	pitch = {default={8,nil},value={-2,-1.5,-1.25,-1,-0.75,-0.5,-0.25,0,0.25,0.5,0.75,1,1.25,1.5,2}},
+  	pitch = {default={12,nil},value={-2,-1.5,-1.25,-1,-0.75,-0.5,-0.25,0,0.25,0.5,0.75,1,1.25,1.5,2}},
   	pan = {default={7,9},value={-7/7,-6/7,-5/7,-4/7,-3/7,-2/7,-1/7,0,1/7,2/7,3/7,4/7,5/7,6/7,7/7}},
   	lpf = {default={15,nil},value={}},
   	resonance = {default={8,nil},value={}},
   	hpf = {default={1,nil},value={}},
-  	sample_start = {default={0,nil},value={}},
+  	sample_start = {default={1,nil},value={}},
   	sample_length = {default={15,nil},value={}},
-  	retrig = {default={0,nil},value={}},
-  	delay = {default={0,nil},value={}},
-  	reverb = {default={0,nil},value={}},
-  	probability = {default={12,nil},value={}},
+  	retrig = {default={1,nil},value={}},
+  	delay = {default={1,nil},value={}},
+  	reverb = {default={1,nil},value={}},
+  	probability = {default={15,nil},value={}},
 }
 
 local effect_order = {
@@ -34,35 +34,39 @@ local effect_order = {
 	"probability",
 }
 for i=1,15 do 
-	effect_available.volume.value[i]=(i-1)/15
+	effect_available.volume.value[i]=(i-1)/14
 	effect_available.lpf.value[i]=40*math.pow(1.5,i)
 	effect_available.resonance.value[i]=(4*i)/15
 	effect_available.hpf.value[i]=40*math.pow(1.5,i)
-	effect_available.sample_start.value[i]=3*i/15
+	effect_available.sample_start.value[i]=3*(i-1)/15
 	effect_available.sample_length.value[i]=3*i/15
 	effect_available.retrig.value[i]=i 
 	effect_available.delay.value[i]=i
 	effect_available.reverb.value[i]=i
-	effect_available.probability.value[i]=i/15
+	effect_available.probability.value[i]=(i-1)/14
+end
+
+local function current_time()
+	return clock.get_beat_sec()*clock.get_beats()
 end
 
 local function random_float(lower, greater)
     return lower + math.random()  * (greater - lower);
 end
 
-local function get_effect(trig,effectname)
+local function get_effect(effect,effectname)
 	-- index ranges between 0 and 15 
 	-- tab.print(trig)
 	-- print(effectname,"1",trig.effect[effectname].value[1])
 	-- print(effectname,"2",trig.effect[effectname].value[2])
-	local effect_value = effect_available[effectname].value[trig.effect[effectname].value[1]]
-	if trig.effect[effectname].value[2] ~= nil then 
+	local effect_value = effect_available[effectname].value[effect[effectname].value[1]]
+	if effect[effectname].value[2] ~= nil then 
 		-- have range
-		if trig.effect[effectname].lfo ~= 0 then 
+		if effect[effectname].lfo ~= 0 then 
 			-- TODO calcualte and return lfo modulated value 
 		else
 			-- no LFO? but have range? generate a random value in the range
-			effect_value = random_float(effect_value,effect_available[effectname].value[trig.effect[effectname].value[2]])
+			effect_value = random_float(effect_value,effect_available[effectname].value[effect[effectname].value[2]])
 		end
 	end 
 	return effect_value
@@ -89,9 +93,9 @@ function Drummy:new(args)
   o.pressed_buttons_scale = {}
   o.selected_trig=nil
   o.effect_id_selected=0
-  o.effect_last = {}
+  o.effect_stored = {}
   for k,e in pairs(effect_available) do
-  	o.effect_last[k] = {value=e.default,lfo=0}
+  	o.effect_stored[k] = {value=e.default,lfo=0}
   	if #e.value < 15 then 
   		print("UH OH "..k.." DOES NOT HAVE 15 value")
   	end
@@ -132,10 +136,12 @@ function Drummy:new(args)
 	  			o.pattern[i].track[j].trig[row][col]={
 	  				playing=false,
 	  				selected=false,
+	  				held=0,
 	  				active=false,
+	  				pressed=false,
 	  				effect={},
 	  			}
-	  			for k,v in pairs(o.effect_last) do 
+	  			for k,v in pairs(o.effect_stored) do 
 		  			o.pattern[i].track[j].trig[row][col].effect[k]={value={v.value[1],v.value[2]},lfo=v.lfo}
 	  			end
 	  		end
@@ -206,26 +212,27 @@ function Drummy:sixteenth_note(t)
 			end
 			-- TODO emit track if something is there
 			trig = self.pattern[self.current_pattern].track[i].trig[self.pattern[self.current_pattern].track[i].pos[1]][self.pattern[self.current_pattern].track[i].pos[2]]
-			if trig.active and not self.pattern[self.current_pattern].track[i].muted and math.random() < get_effect(trig,"probability") then 
+			if trig.active and not self.pattern[self.current_pattern].track[i].muted and math.random() < get_effect(trig.effect,"probability") then 
 				-- emit 
-				d:play_trig(i,trig)
+				d:play_trig(i,trig.effect)
 			end
 		end
 	end
 	-- print("sixteenth_note ",t) 
 end
 
-function Drummy:play_trig(i,trig)
+function Drummy:play_trig(i,effect)
 	self.track_playing[i]=true
-	local volume = get_effect(trig,"volume")
-	local pitch = get_effect(trig,"pitch")
-	local pan = get_effect(trig,"pan")
-	local lpf = get_effect(trig,"lpf")
-	local resonance = get_effect(trig,"resonance")
-	local hpf = get_effect(trig,"hpf")
-	local sample_start = get_effect(trig,"sample_start")
-	local sample_length = get_effect(trig,"sample_length")
-	engine.play(i,volume,pitch,rate,pan,lpf,resonance,hpf,sample_start,sample_length)
+	local volume = get_effect(effect,"volume")
+	local pitch = get_effect(effect,"pitch")
+	local pan = get_effect(effect,"pan")
+	local lpf = get_effect(effect,"lpf")
+	local resonance = get_effect(effect,"resonance")
+	local hpf = get_effect(effect,"hpf")
+	local sample_start = get_effect(effect,"sample_start")
+	local sample_length = get_effect(effect,"sample_length")
+	print(i,volume,pitch,pan,lpf,resonance,hpf,sample_start,sample_length)
+	engine.play(i,volume,pitch,pan,lpf,resonance,hpf,sample_start,sample_length)
 end
 
 -- returns the visualization of the matrix
@@ -260,7 +267,7 @@ function Drummy:get_grid()
 			self.visual[5][i+2]=i
 		end
 		-- if trig is selected, then show the current value
-		local e = self.effect_last[effect_order[self.effect_id_selected]]
+		local e = self.effect_stored[effect_order[self.effect_id_selected]]
 		if trig_selected ~= nil then 
 			e = trig_selected.effect[effect_order[self.effect_id_selected]]
 		end
@@ -294,6 +301,11 @@ function Drummy:get_grid()
 		for col=1,64 do 
 			if self.pattern[self.current_pattern].track[self.track_current].trig[row][col].selected then 
 				self.visual[row][col] = 14 
+				if self.pattern[self.current_pattern].track[self.track_current].trig[row][col].held ~= nil then 
+					if self.pattern[self.current_pattern].track[self.track_current].trig[row][col].held > 0.4 then 
+						self.visual[row][col] =  self.visual[row][col] * self.blink
+					end
+				end
 			elseif self.pattern[self.current_pattern].track[self.track_current].trig[row][col].active then 
 				self.visual[row][col] = 3 
 			end
@@ -304,7 +316,7 @@ function Drummy:get_grid()
 	-- if trig selected, illuminate the status of the effects
 	-- if no trig, show the last effects set
 	for i,k in ipairs(effect_order) do 
-		local e = self.effect_last[effect_order[i]]
+		local e = self.effect_stored[effect_order[i]]
 		if trig_selected ~= nil then 
 			e = trig_selected.effect[effect_order[i]]
 		end
@@ -379,6 +391,7 @@ end
 
 -- update the state depending on what was pressed
 function Drummy:key_press(row,col,on)
+	print("key_press",row,col,on)
 	if on then 
 		self.pressed_buttons[row..","..col]=true
 	else
@@ -393,8 +406,8 @@ function Drummy:key_press(row,col,on)
 		self.selected_trig = nil
 	elseif row == 6 and col > 1 and on then 
 		self:press_effect(col-1)
-	elseif row >= 1 and row <= 4 and on then 
-		self:press_trig(row,col)
+	elseif row >= 1 and row <= 4 then 
+		self:press_trig(row,col,on)
 	elseif row==6 and col==1 then 
 		self:press_rec(on)
 	elseif row==7 and col==1 then 
@@ -460,8 +473,8 @@ function Drummy:update_effect(scale_id,on)
 		self.pattern[self.current_pattern].track[self.track_current].trig[self.selected_trig[1]][self.selected_trig[2]].effect[effect_order[self.effect_id_selected]].value = value 
 	else
 		-- update the cache
-		print("updating cache effect")
-		self.effect_last[effect_order[self.effect_id_selected]].value = value 
+		print("updating effect_store")
+		self.effect_stored[effect_order[self.effect_id_selected]].value = value
 	end
 end
 
@@ -480,7 +493,7 @@ function Drummy:press_track(track)
 	self.track_current = track 
 	self.selected_trig = nil
 	if not self.is_playing then 
-		engine.play(track,1.0,0)
+		self:play_trig(track,self.effect_stored)
 	end
 end
 
@@ -511,8 +524,8 @@ function Drummy:press_play(on)
 end
 
 
-function Drummy:press_trig(row,col)
-	print("press_trig",row,col)
+function Drummy:press_trig(row,col,on)
+	print("press_trig",row,col,on)
 	if row > self.pattern[self.current_pattern].track[self.track_current].pos_max[1] then 
 		do return end 
 	end
@@ -520,32 +533,59 @@ function Drummy:press_trig(row,col)
 		do return end 
 	end
 
-	self.selected_trig = nil
-	if self.pattern[self.current_pattern].track[self.track_current].trig[row][col].selected then 
-		self.pattern[self.current_pattern].track[self.track_current].trig[row][col].selected = false
-		self.pattern[self.current_pattern].track[self.track_current].trig[row][col].active = false
-		self.pattern[self.current_pattern].trigs_active = self.pattern[self.current_pattern].trigs_active - 1
+	-- check if held
+	if not on and self.pattern[self.current_pattern].track[self.track_current].trig[row][col].selected  then
+		-- lifting the button for the second time
+		local hold_time = current_time() - self.pattern[self.current_pattern].track[self.track_current].trig[row][col].held
+		self.pattern[self.current_pattern].track[self.track_current].trig[row][col].held = hold_time
+		if hold_time > 0.4 then 
+			-- copy the effects of the current to the cache
+			self.effect_stored = {}
+			for k,e in pairs(self.pattern[self.current_pattern].track[self.track_current].trig[row][col].effect) do 
+				self.effect_stored[k] = {value=e.value,lfo=e.lfo}
+			end
+		elseif row==self.selected_trig[1] and col==self.selected_trig[2] and self.pattern[self.current_pattern].track[self.track_current].trig[row][col].pressed then 
+			-- its already been pressed AND
+			-- didn't hold long enough to copy, so deselect
+			print("deselecting")
+			self.selected_trig = nil
+			self.pattern[self.current_pattern].track[self.track_current].trig[row][col].selected = false
+			self.pattern[self.current_pattern].track[self.track_current].trig[row][col].active = false
+			self.pattern[self.current_pattern].track[self.track_current].trig[row][col].pressed = false
+			self.pattern[self.current_pattern].trigs_active = self.pattern[self.current_pattern].trigs_active - 1
+			do return end
+		end
+		-- acknowledge its been pressed at least once
+		self.pattern[self.current_pattern].track[self.track_current].trig[row][col].pressed = true
 		do return end
 	end
 
+	if self.selected_trig ~= nil and row==self.selected_trig[1] and col==self.selected_trig[2] and on then 
+		-- do action when lifting
+		self.pattern[self.current_pattern].track[self.track_current].trig[row][col].held = current_time()
+		do return end 	
+	end
+
+	self.selected_trig = nil
 	-- unselect all others and select current
 	for r=1,4 do 
 		for c=1,16 do 
+			self.pattern[self.current_pattern].track[self.track_current].trig[row][col].held = nil
 			self.pattern[self.current_pattern].track[self.track_current].trig[r][c].selected = false 
+			self.pattern[self.current_pattern].track[self.track_current].trig[row][col].pressed = false
 		end
 	end
+	self.pattern[self.current_pattern].track[self.track_current].trig[row][col].held = current_time()
 	self.pattern[self.current_pattern].track[self.track_current].trig[row][col].selected = true
 	if not self.pattern[self.current_pattern].track[self.track_current].trig[row][col].active then
 		self.pattern[self.current_pattern].trigs_active = self.pattern[self.current_pattern].trigs_active + 1
+		-- reset the effects to the cached effects
+		for k,e in pairs(self.effect_stored) do 
+			self.pattern[self.current_pattern].track[self.track_current].trig[row][col].effect[k] = {value=e.value,lfo=e.lfo} 
+		end
 	end
 	self.pattern[self.current_pattern].track[self.track_current].trig[row][col].active = true	
 	self.selected_trig = {row,col}
-	-- the last effect should correspond to this trig 
-
-	self.effect_last = {}
-	for k,e in pairs(self.pattern[self.current_pattern].track[self.track_current].trig[row][col].effect) do 
-		self.effect_last[k] = {value=e.value,lfo=e.lfo}
-	end
 end
 
 
