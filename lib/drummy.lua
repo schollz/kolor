@@ -295,16 +295,22 @@ function Drummy:get_grid()
 		end
 	end	
 
+	-- show the effects
 	-- if trig selected, illuminate the status of the effects
-	if trig_selected ~= nil then 
-		for i,k in ipairs(effect_order) do 
-			local e = trig_selected.effect[effect_order[i]]
-			self.visual[6][i+1] = e.value[1]
-			if e.value[2] ~= nil then 
-				self.visual[6][i+1] = self.visual[6][i+1] + self.blink*(e.value[2]-e.value[1])
-			end
+	-- if no trig, show the last effects set
+	for i,k in ipairs(effect_order) do 
+		local e = self.effect_last[effect_order[i]]
+		if trig_selected ~= nil then 
+			e = trig_selected.effect[effect_order[i]]
 		end
-	end			
+		self.visual[6][i+1] = e.value[1]
+		if e.value[2] ~= nil then 
+			self.visual[6][i+1] = self.visual[6][i+1] + self.blink*(e.value[2]-e.value[1])
+		end
+		if i==self.effect_id_selected then 
+			self.visual[6][i+1] = self.visual[6][i+1] * self.blink 
+		end
+	end
 
 	-- illuminate currently playing trig on currently selected track
 	if self.is_playing and self.pattern[self.current_pattern].track[self.track_current].pos[2] > 0 then 
@@ -395,6 +401,7 @@ end
 
 
 function Drummy:press_pattern(pattern_id)
+	self.selected_trig = nil
 	self.current_pattern = pattern_id
 end
 
@@ -435,7 +442,7 @@ function Drummy:update_effect(scale_id,on)
 	else
 		-- update the cache
 		print("updating cache effect")
-		self.effect_last.value = value 
+		self.effect_last[effect_order[self.effect_id_selected]].value = value 
 	end
 end
 
@@ -449,8 +456,6 @@ function Drummy:press_effect(effect_id)
 	self.effect_id_selected = effect_id
 	self.show_graphic = {effect_order[effect_id],3}
 end
-
--- TODO: press_pattern should destory selected trig
 
 function Drummy:press_track(track)
 	self.track_current = track 
