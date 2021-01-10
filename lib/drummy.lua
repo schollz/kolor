@@ -197,7 +197,7 @@ function Drummy:new(args)
   o.blink = 0
   o.blink_slow = 0
   o.blink_fast = 0
-  o.blink_countdown = 4
+  o.blink_count = 0
   o.show_graphic = {nil,0}
   o.debouncer = metro.init()
   o.debouncer.time = 0.2
@@ -220,16 +220,21 @@ function Drummy:debounce()
 				-- self.pattern[self.current_pattern].track[self.track_current].trig[row][col].held = current_time() - self.pattern[self.current_pattern].track[self.track_current].trig[row][col].held
 				-- print("copied")
 
-	self.blink_fast = 1-self.blink_fast
-	if self.blink_countdown > 0 then 
-		if self.blink_countdown %2 == 0 then 
-			self.blink = 1 - self.blink 
-		end
-		self.blink_countdown = self.blink_countdown - 1 
-		if self.blink_countdown <= 0 then 
-			self.blink_countdown = 4
-			self.blink_slow = 1 - self.blink_slow
-		end 
+	self.blink_count = self.blink_count + 1
+	if self.blink_count > 1000 then 
+		self.blink_count = 0
+	end
+	self.blink_fast = 1
+	self.blink_slow = 1 
+	self.blink = 1 
+	if self.blink_count % 3 == 0 then 
+		self.blink_fast = 0
+	end
+	if self.blink_count % 4 == 0 then 
+		self.blink = 0
+	end
+	if self.blink_count % 5 == 0 then 
+		self.blink_slow = 0
 	end
 	if self.show_graphic[2] > 0 then 
 		 self.show_graphic[2] = self.show_graphic[2] - 1
@@ -242,6 +247,7 @@ function Drummy:thirtysecond_note(t)
 		print(self.bottom_beat)
 	end
 end
+
 -- sixteenth note is played
 function Drummy:sixteenth_note(t)
 	self.beat_current = t 
@@ -360,10 +366,16 @@ function Drummy:get_grid()
 		for row=1,4 do 
 			for col=1,64 do
 				if row <=  self.pattern[self.current_pattern].track[self.track_current].pos_max[1] and col <= self.pattern[self.current_pattern].track[self.track_current].pos_max[2] then
-					if self.pattern[self.current_pattern].track[self.track_current].trig[row][col].selected then 
-						self.visual[row][col] = 14 
-					elseif self.pattern[self.current_pattern].track[self.track_current].trig[row][col].active then 
-						self.visual[row][col] = 3 
+					if self.pattern[self.current_pattern].track[self.track_current].trig[row][col].active then 
+						-- determine the current effect and display the effect it
+						if self.effect_id_selected > 0 then 
+							self.visual[row][col] = self.pattern[self.current_pattern].track[self.track_current].trig[row][col].effect[effect_order[self.effect_id_selected]].value[1]
+						else
+							self.visual[row][col] = 3 
+						end
+						if self.pattern[self.current_pattern].track[self.track_current].trig[row][col].selected then 
+							self.visual[row][col] = self.visual[row][col] * self.blink_fast
+						end
 					end
 				end
 			end
@@ -502,8 +514,15 @@ function Drummy:press_chain_pattern(pattern_id)
 end
 
 function Drummy:press_pattern(pattern_id)
-	self.selected_trig = nil
+	self:deselect()
 	self.current_pattern = pattern_id
+end
+
+function Drummy:deselect()
+	if self.selected_trig ~= nil then 
+		self.pattern[self.current_pattern].track[self.track_current].trig[self.selected_trig[1]][self.selected_trig[2]].selected = false
+		self.selected_trig = nil
+	end
 end
 
 function Drummy:update_effect(scale_id,on)
@@ -555,10 +574,11 @@ function Drummy:press_effect(effect_id)
 		do return end 
 	end
 	self.effect_id_selected = effect_id
-	self.show_graphic = {effect_order[effect_id],3}
+	self.show_graphic = {effect_order[effect_id],2}
 end
 
 function Drummy:press_track(track)
+	self:deselect()
 	self.track_current = track 
 	self.selected_trig = nil
 	if not self.is_playing then 
@@ -636,6 +656,7 @@ function Drummy:undo()
 	-- insert into redo's and load undo
 	if #self.undo_trig > 0 then 
 		print("undoing")
+		self.show_graphic = {"undo",2}
 		local d = self.undo_trig[#self.undo_trig]
 		table.remove(self.undo_trig,#self.undo_trig)
 		table.insert(self.redo_trig,{d[1],d[2],d[3],d[4],json.encode(self.pattern[d[1]].track[d[2]].trig[d[3]][d[4]])})
@@ -657,6 +678,7 @@ function Drummy:redo()
 	-- insert into undo's
 	if #self.redo_trig > 0 then 
 		print("redoing")
+		self.show_graphic = {"redo",2}
 		local d = self.redo_trig[#self.redo_trig]
 		table.remove(self.redo_trig,#self.redo_trig)
 		table.insert(self.undo_trig,{d[1],d[2],d[3],d[4],json.encode(self.pattern[d[1]].track[d[2]].trig[d[3]][d[4]])})
