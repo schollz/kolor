@@ -105,6 +105,7 @@ function Drummy:new(args)
   o.is_playing = false 
   o.is_recording = false
   o.pressed_trig_area = false 
+  o.pressed_lfo = false
   o.pressed_buttons_bar = false
   o.pressed_buttons = {}
   o.pressed_buttons_scale = {}
@@ -112,7 +113,7 @@ function Drummy:new(args)
   o.effect_id_selected=0
   o.effect_stored = {}
   for k,e in pairs(effect_available) do
-  	o.effect_stored[k] = {value=e.default,lfo=0}
+  	o.effect_stored[k] = {value=e.default,lfo={1,nil}}
   	if #e.value < 15 then 
   		print("UH OH "..k.." DOES NOT HAVE 15 value")
   	end
@@ -143,7 +144,8 @@ function Drummy:new(args)
 	  	o.pattern[i].track[j] = {
 	  		muted=false,
 	  		pos={1,1},
-	  		pos_max={1,16},
+	  		pos_max={1,1},
+	  		-- pos_max={4,16},
 	  		trig={},
 	  		longest_track=j==1,
 	  	}
@@ -160,7 +162,7 @@ function Drummy:new(args)
 	  				effect={},
 	  			}
 	  			for k,v in pairs(o.effect_stored) do 
-		  			o.pattern[i].track[j].trig[row][col].effect[k]={value={v.value[1],v.value[2]},lfo=v.lfo}
+		  			o.pattern[i].track[j].trig[row][col].effect[k]={value={v.value[1],v.value[2]},lfo={v.lfo[1],v.lfo[2]}}
 	  			end
 	  		end
 	  	end
@@ -196,10 +198,11 @@ function Drummy:new(args)
   engine.samplefile(4,"/home/we/dust/code/drummy/samples/ch1.wav")
 
   -- debouncing and blinking
-  o.blink = 0
-  o.blink_slow = 0
-  o.blink_fast = 0
   o.blink_count = 0
+  o.blinky = {}
+  for i=1,16 do 
+  	o.blinky[i] = 1 -- 1 = fast, 16 = slow
+  end
   o.show_graphic = {nil,0}
   o.debouncer = metro.init()
   o.debouncer.time = 0.2
@@ -216,17 +219,16 @@ function Drummy:debounce()
 	if self.blink_count > 1000 then 
 		self.blink_count = 0
 	end
-	self.blink_fast = 1
-	self.blink_slow = 1 
-	self.blink = 1 
-	if self.blink_count % 3 == 0 then 
-		self.blink_fast = 0
-	end
-	if self.blink_count % 4 == 0 then 
-		self.blink = 0
-	end
-	if self.blink_count % 5 == 0 then 
-		self.blink_slow = 0
+	for i,_ in ipairs(self.blinky) do 
+		if i==1 then 
+			self.blinky[i] = 1 - self.blinky[i]
+		else
+			if self.blink_count % i == 0 then 
+				self.blinky[i] = 0 
+			else
+				self.blinky[i] = 1 
+			end
+		end
 	end
 	if self.show_graphic[2] > 0 then 
 		 self.show_graphic[2] = self.show_graphic[2] - 1
@@ -236,7 +238,7 @@ end
 function Drummy:thirtysecond_note(t)
 	if self.is_playing then 
 		self.bottom_beat = not self.bottom_beat
-		print(self.bottom_beat)
+		-- print(self.bottom_beat)
 	end
 end
 
@@ -244,7 +246,7 @@ end
 function Drummy:sixteenth_note(t)
 	self.beat_current = t 
 	if self.is_playing then 
-		print(t)
+		-- print(t)
 		-- print(self.beat_current-self.beat_started)
 		for i,_ in ipairs(self.pattern[self.current_pattern].track) do 
 			self.track_playing[i] = false 
@@ -289,7 +291,7 @@ function Drummy:play_trig(i,effect)
 	if pitch < 0 then 
 		sample_start = 1 - sample_start
 	end
-	print(i,volume,pitch,pan,lpf,resonance,hpf,sample_start,sample_length,retrig)
+	-- print(i,volume,pitch,pan,lpf,resonance,hpf,sample_start,sample_length,retrig)
 	engine.play(i,volume,pitch,pan,lpf,resonance,hpf,sample_start,sample_length,retrig)
 end
 
@@ -312,35 +314,57 @@ function Drummy:get_grid()
 	if self.show_graphic[2] > 0 then 
 		-- d.show_graphic={"lfo",3}
 		pixels = graphic_pixels.pixels(self.show_graphic[1])
-		for _,p in ipairs(pixels) do 
-			self.visual[p[1]][p[2]]=p[3]
+		if pixels ~= nil then 
+			for _,p in ipairs(pixels) do 
+				self.visual[p[1]][p[2]]=p[3]
+			end
+			do return self.visual end
 		end
-		do return self.visual end
 	end
 
-	-- draw bar gradient / scale
+	-- draw bar gradient / scale / lfo scale
 	if self.effect_id_selected > 0 then 
-		self.visual[6][self.effect_id_selected+1]=15
-		for i=1,15 do 
-			self.visual[5][i+1]=i
-		end
 		-- if trig is selected, then show the current value
 		local e = self.effect_stored[effect_order[self.effect_id_selected]]
 		if trig_selected ~= nil then 
 			e = trig_selected.effect[effect_order[self.effect_id_selected]]
 		end
-		local value = e.value
-		if value[2] == nil then 
-			self.visual[5][value[1]+1]=value[1]*self.blink_fast
-		else
-			for j=value[1],value[2] do 
-				self.visual[5][j+1]=j*self.blink_fast
+		if self.pressed_lfo then 
+			-- draw lfo scale
+			self.visual[5][1] = 7
+			if e.lfo[1] > 1 and e.lfo[2] == nil then 
+				self.visual[5][1] = 7*self.blinky[e.lfo[1]]
+			elseif e.lfo[1] > 1 and e.lfo[2] ~= nil then 
+				self.visual[5][1] = 7 + 7*self.blinky[e.lfo[1]]
 			end
+			for i=1,15 do 
+				self.visual[5][i+1]=i
+				if (i==e.lfo[1] and e.lfo[2] == nil) or (e.lfo[2] ~= nil and i>=e.lfo[1] and i<=e.lfo[2]) then
+					self.visual[5][i+1]=15
+					if i > 1 then  
+						self.visual[5][i+1] = self.visual[5][i+1] * self.blinky[i]
+					end
+				end
+			end
+		else
+			-- draw efect scale
+			self.visual[6][self.effect_id_selected+1]=15
+			for i=1,15 do 
+				self.visual[5][i+1]=i
+			end
+			local value = e.value
+			if value[2] == nil then 
+				self.visual[5][value[1]+1]=value[1]*self.blinky[1]
+			else
+				for j=value[1],value[2] do 
+					self.visual[5][j+1]=j*self.blinky[1]
+				end
+			end
+			-- show the lfo
+			if e.lfo[1] > 1 or e.lfo[2] ~=nil then 
+				self.visual[5][1] = 15 -- TODO set to the level of the lfo
+			end		
 		end
-		-- show the lfo
-		if e.lfo > 0 then 
-			self.visual[5][1] = 15 -- TODO set to the level of the lfo
-		end		
 	else
 		-- show beats along the track
 		for i=0,16 do 
@@ -374,7 +398,7 @@ function Drummy:get_grid()
 							self.visual[row][col] = 3 
 						end
 						if self.pattern[self.current_pattern].track[self.track_current].trig[row][col].selected then 
-							self.visual[row][col] = self.visual[row][col] * self.blink_fast
+							self.visual[row][col] = self.visual[row][col] * self.blinky[1]
 						end
 					end
 				end
@@ -392,10 +416,10 @@ function Drummy:get_grid()
 		end
 		self.visual[6][i+1] = e.value[1]
 		if e.value[2] ~= nil then 
-			self.visual[6][i+1] = self.visual[6][i+1] + self.blink*(e.value[2]-e.value[1])
+			self.visual[6][i+1] = self.visual[6][i+1] + self.blinky[4]*(e.value[2]-e.value[1])
 		end
 		if i==self.effect_id_selected then 
-			self.visual[6][i+1] = self.visual[6][i+1] * self.blink 
+			self.visual[6][i+1] = self.visual[6][i+1] * self.blinky[4] 
 		end
 	end
 
@@ -418,7 +442,7 @@ function Drummy:get_grid()
 			self.visual[8][i+1] = 1
 		end
 		if i==self.track_current then 
-			self.visual[8][i+1] = self.visual[8][i+1] *self.blink 
+			self.visual[8][i+1] = self.visual[8][i+1] *self.blinky[6] 
 		end
 	end
 
@@ -469,9 +493,14 @@ function Drummy:key_press(row,col,on)
 	end
 
 	if row == 5 and col == 1 and self.effect_id_selected>0 and on then 
-		-- TODO toggle lfo setting 
+		self.pressed_lfo = not self.pressed_lfo
+		if self.pressed_lfo then self.show_graphic = {"lfo",2} end
 	elseif row == 5 and col > 1 and self.effect_id_selected>0  then 
-		self:update_effect(col-1,on)
+		if self.pressed_lfo then 
+			self:update_lfo(col-1,on)
+		else
+			self:update_effect(col-1,on)
+		end
 	elseif row == 5 and self.effect_id_selected==0  then 
 		self.selected_trig = nil
 		self.pressed_buttons_bar = on 
@@ -504,6 +533,46 @@ function Drummy:key_press(row,col,on)
 	end
 end
 
+
+
+function Drummy:update_lfo(scale_id,on)
+	print("update_lfo")
+	-- scale_id is between 1 and 15 
+
+	-- update buttons
+	if on then 
+		self.pressed_buttons_scale[scale_id] = true 
+	else
+		self.pressed_buttons_scale[scale_id] = nil 
+		do return end
+	end
+
+	-- determine which buttons are being held
+	buttons_held = {}
+	for k,_ in pairs(self.pressed_buttons_scale) do
+		table.insert(buttons_held,k)
+	end
+	table.sort(buttons_held)
+	if #buttons_held < 1 then 
+		print("no buttons?")
+		do return end
+	end
+	local lfo = {buttons_held[1],nil}
+	if #buttons_held > 1 then 
+		lfo = {buttons_held[1],buttons_held[#buttons_held]}
+	end
+
+	if self.selected_trig ~= nil then 
+		-- simple case, update selected trig 
+		print("updating selected trig effect '"..effect_order[self.effect_id_selected].."' at ("..self.selected_trig[1]..","..self.selected_trig[2]..")")
+		tab.print(self.pattern[self.current_pattern].track[self.track_current].trig[self.selected_trig[1]][self.selected_trig[2]].effect[effect_order[self.effect_id_selected]])
+		self.pattern[self.current_pattern].track[self.track_current].trig[self.selected_trig[1]][self.selected_trig[2]].effect[effect_order[self.effect_id_selected]].lfo = lfo 
+	else
+		-- update the cache
+		print("updating effect_store")
+		self.effect_stored[effect_order[self.effect_id_selected]].lfo = lfo
+	end
+end
 
 function Drummy:copy_effect()
 	if self.selected_trig ~= nil then 
@@ -582,8 +651,6 @@ function Drummy:update_effect(scale_id,on)
 	if #buttons_held > 1 then 
 		value = {buttons_held[1],buttons_held[#buttons_held]}
 	end
-	print(value[1])
-	print(value[2])
 
 	if self.selected_trig ~= nil then 
 		-- simple case, update selected trig 
