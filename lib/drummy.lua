@@ -130,6 +130,7 @@ function Drummy:new(args)
   o.pattern = {}
   for i=1,9 do 
   	o.pattern[i] = {}
+  	o.pattern[i].next_pattern_queued=i
   	o.pattern[i].next_pattern={}
   	for j=1,9 do 
 	  	o.pattern[i].next_pattern[j] = 0
@@ -144,6 +145,7 @@ function Drummy:new(args)
 	  		pos={1,1},
 	  		pos_max={1,16},
 	  		trig={},
+	  		longest_track=j==1,
 	  	}
 	  	-- fill in default trigs
 	  	for row=1,4 do 
@@ -210,16 +212,6 @@ function Drummy:new(args)
 end
 
 function Drummy:debounce()
-	-- TODO ADD COPY SOMEWHERE ELSE
-				-- -- copy the effects of the current to the cache
-				-- self.effect_stored = {}
-				-- for k,e in pairs(self.pattern[self.current_pattern].track[self.track_current].trig[row][col].effect) do 
-				-- 	self.effect_stored[k] = {value=e.value,lfo=e.lfo}
-				-- end
-				-- self.show_graphic = {"copied",3}
-				-- self.pattern[self.current_pattern].track[self.track_current].trig[row][col].held = current_time() - self.pattern[self.current_pattern].track[self.track_current].trig[row][col].held
-				-- print("copied")
-
 	self.blink_count = self.blink_count + 1
 	if self.blink_count > 1000 then 
 		self.blink_count = 0
@@ -263,8 +255,16 @@ function Drummy:sixteenth_note(t)
 			end
 			if self.pattern[self.current_pattern].track[i].pos[1] > self.pattern[self.current_pattern].track[i].pos_max[1] then 
 				self.pattern[self.current_pattern].track[i].pos[1] = 1
+				if self.pattern[self.current_pattern].track[i].longest_track then
+					-- starting over! note: longest track determines when queue next
+					self.current_pattern = self.pattern[self.current_pattern].next_pattern_queued
+					for j, _ in ipairs(self.pattern[self.current_pattern].track) do 
+						self.pattern[self.current_pattern].track[j].pos[1] = 1
+						self.pattern[self.current_pattern].track[j].pos[2] = 1
+					end
+					-- TODO: use markov chains here to determine next queued pattern
+				end
 			end
-			-- TODO emit track if something is there
 			trig = self.pattern[self.current_pattern].track[i].trig[self.pattern[self.current_pattern].track[i].pos[1]][self.pattern[self.current_pattern].track[i].pos[2]]
 			if trig.active and not self.pattern[self.current_pattern].track[i].muted and math.random() < get_effect(trig.effect,"probability") then 
 				-- emit 
@@ -426,7 +426,7 @@ function Drummy:get_grid()
 	for i=1,9 do 
 		if self.current_pattern == i then 
 			self.visual[8][i+7] = 15 
-		elseif self.pattern[self.current_pattern].next_pattern[i] > 0 then -- show which possible patterns are next
+		elseif i==self.pattern[self.current_pattern].next_pattern_queued then -- show which is next
 			self.visual[8][i+7] = 4
 		end
 	end
@@ -475,8 +475,10 @@ function Drummy:key_press(row,col,on)
 	elseif row == 5 and self.effect_id_selected==0  then 
 		self.selected_trig = nil
 		self.pressed_buttons_bar = on 
-	elseif row == 6 and col > 1 and on then 
+	elseif row == 6 and col >= 1 and col <= 13 and on then 
 		self:press_effect(col-1)
+	elseif row == 6 and col == 16 and on then 
+		self:copy_effect()
 	elseif row >= 1 and row <= 4 and self.pressed_buttons_bar and on then 
 		self:update_posmax(row,col)
 	elseif row >= 1 and row <= 4 and not self.pressed_buttons_bar and on then 
@@ -502,8 +504,33 @@ function Drummy:key_press(row,col,on)
 	end
 end
 
+
+function Drummy:copy_effect()
+	if self.selected_trig ~= nil then 
+				-- copy the effects of the current to the cache
+		self.effect_stored = {}
+		for k,e in pairs(self.pattern[self.current_pattern].track[self.track_current].trig[self.selected_trig[1]][self.selected_trig[2]].effect) do 
+			self.effect_stored[k] = {value=e.value,lfo=e.lfo}
+		end
+		self.show_graphic = {"copied",3}
+	end
+end
+
+
 function Drummy:update_posmax(row,col)
 	self.pattern[self.current_pattern].track[self.track_current].pos_max = {row,col}
+	-- find new longest track 
+	longest_track = 1 
+	longest_track_value = 0
+	for i,track in ipairs(self.pattern[self.current_pattern].track) do 
+		self.pattern[self.current_pattern].track[i].longest_track = false
+		if track.pos_max[1]*track.pos_max[2] > longest_track_value then 
+			longest_track = i 
+			longest_track_value = track.pos_max[1]*track.pos_max[2] 
+		end
+	end
+	print("longesttrack "..longest_track)
+	self.pattern[self.current_pattern].track[longest_track].longest_track = true
 end
 
 function Drummy:press_chain_pattern(pattern_id)
@@ -515,7 +542,11 @@ end
 
 function Drummy:press_pattern(pattern_id)
 	self:deselect()
-	self.current_pattern = pattern_id
+	if self.is_playing then 
+		self.pattern[self.current_pattern].next_pattern_queued = pattern_id
+	else
+		self.current_pattern = pattern_id
+	end
 end
 
 function Drummy:deselect()
