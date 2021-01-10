@@ -29,20 +29,20 @@ local effect_order = {
 	"sample_start",
 	"sample_length",
 	"retrig",
+	"probability",
 	"delay",
 	"reverb",
-	"probability",
 }
 for i=1,15 do 
 	effect_available.volume.value[i]=(i-1)/14
 	effect_available.lpf.value[i]=40*math.pow(1.5,i)
 	effect_available.resonance.value[i]=(4*i)/15
 	effect_available.hpf.value[i]=40*math.pow(1.5,i)
-	effect_available.sample_start.value[i]=3*(i-1)/15
-	effect_available.sample_length.value[i]=3*i/15
-	effect_available.retrig.value[i]=i 
-	effect_available.delay.value[i]=i
-	effect_available.reverb.value[i]=i
+	effect_available.sample_start.value[i]=(i-1)/14
+	effect_available.sample_length.value[i]=(i-1)/14
+	effect_available.retrig.value[i]=(i-1)
+	effect_available.delay.value[i]=(i-1)/14
+	effect_available.reverb.value[i]=(i-1)/14
 	effect_available.probability.value[i]=(i-1)/14
 end
 
@@ -170,7 +170,9 @@ function Drummy:new(args)
 
   -- debouncing and blinking
   o.blink = 0
-  o.blink_countdown = 2
+  o.blink_slow = 0
+  o.blink_fast = 0
+  o.blink_countdown = 4
   o.show_graphic = {nil,0}
   o.debouncer = metro.init()
   o.debouncer.time = 0.2
@@ -183,11 +185,15 @@ function Drummy:new(args)
 end
 
 function Drummy:debounce()
+	self.blink_fast = 1-self.blink_fast
 	if self.blink_countdown > 0 then 
+		if self.blink_countdown %2 == 0 then 
+			self.blink = 1 - self.blink 
+		end
 		self.blink_countdown = self.blink_countdown - 1 
 		if self.blink_countdown <= 0 then 
-			self.blink_countdown = 2 
-			self.blink = 1 - self.blink
+			self.blink_countdown = 4
+			self.blink_slow = 1 - self.blink_slow
 		end 
 	end
 	if self.show_graphic[2] > 0 then 
@@ -231,8 +237,12 @@ function Drummy:play_trig(i,effect)
 	local hpf = get_effect(effect,"hpf")
 	local sample_start = get_effect(effect,"sample_start")
 	local sample_length = get_effect(effect,"sample_length")
-	print(i,volume,pitch,pan,lpf,resonance,hpf,sample_start,sample_length)
-	engine.play(i,volume,pitch,pan,lpf,resonance,hpf,sample_start,sample_length)
+	local retrig = get_effect(effect,"retrig")
+	if pitch < 0 then 
+		sample_start = 1 - sample_start
+	end
+	print(i,volume,pitch,pan,lpf,resonance,hpf,sample_start,sample_length,retrig)
+	engine.play(i,volume,pitch,pan,lpf,resonance,hpf,sample_start,sample_length,retrig)
 end
 
 -- returns the visualization of the matrix
@@ -263,8 +273,8 @@ function Drummy:get_grid()
 	-- draw bar gradient / scale
 	if self.effect_id_selected > 0 then 
 		self.visual[6][self.effect_id_selected+1]=15
-		for i=0,14 do 
-			self.visual[5][i+2]=i
+		for i=1,15 do 
+			self.visual[5][i+1]=i
 		end
 		-- if trig is selected, then show the current value
 		local e = self.effect_stored[effect_order[self.effect_id_selected]]
@@ -273,10 +283,10 @@ function Drummy:get_grid()
 		end
 		local value = e.value
 		if value[2] == nil then 
-			self.visual[5][value[1]+1]=15
+			self.visual[5][value[1]+1]=value[1]*self.blink_fast
 		else
 			for j=value[1],value[2] do 
-				self.visual[5][j+1]=15
+				self.visual[5][j+1]=j*self.blink_fast
 			end
 		end
 		-- show the lfo
