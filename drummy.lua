@@ -3,6 +3,7 @@
 drummy = include("lib/drummy")
 d = nil 
 position={1,1}
+press_positions={{0,0},{0,0}}
 
 function init()
   d = drummy:new()
@@ -77,10 +78,11 @@ function enc(k,d)
 end
 
 function key(k,z)
-  if k==2 and z==1 then 
-    d:key_press(position[1],position[2],true)
-  elseif k==3 then 
-    d:key_press(position[1],position[2],z==1)
+  if k>1 then 
+    if z==1 then 
+      press_positions[k-1] = {position[1],position[2]}
+    end
+    d:key_press(press_positions[k-1][1],press_positions[k-1][2],z==1)
   end
 end
 
