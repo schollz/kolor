@@ -130,7 +130,6 @@ function Drummy:new(args)
   o.pattern = {}
   for i=1,9 do 
   	o.pattern[i] = {}
-  	o.pattern[i].trigs_active=0
   	o.pattern[i].next_pattern={}
   	for j=1,9 do 
 	  	o.pattern[i].next_pattern[j] = 0
@@ -165,8 +164,8 @@ function Drummy:new(args)
 	  	end
   	end
   end
-  o.pattern_undo = {} -- used for undo
-  o.pattern_redo = {} -- used for redo
+  o.undo_trig = {} -- used for undo
+  o.redo_trig = {} -- used for redo
   -- lattice 
   o.beat_started = 0
   o.beat_current = 0
@@ -415,7 +414,7 @@ function Drummy:get_grid()
 	for i=1,9 do 
 		if self.current_pattern == i then 
 			self.visual[8][i+7] = 15 
-		elseif self.pattern[i].trigs_active > 0 then 
+		elseif self.pattern[self.current_pattern].next_pattern[i] > 0 then -- show which possible patterns are next
 			self.visual[8][i+7] = 4
 		end
 	end
@@ -608,12 +607,10 @@ function Drummy:press_trig(row,col)
 		print("deselecting")
 		self.selected_trig = nil
 		self.pattern[self.current_pattern].track[self.track_current].trig[row][col].selected = false
-		self:add_undo()
+		self:add_undo(self.current_pattern,self.track_current,row,col)
 		self.pattern[self.current_pattern].track[self.track_current].trig[row][col].active = false
-		self.pattern[self.current_pattern].trigs_active = self.pattern[self.current_pattern].trigs_active - 1
 		do return end
 	end
-
 
 	self.selected_trig = nil
 	-- unselect all others and select current
@@ -622,9 +619,9 @@ function Drummy:press_trig(row,col)
 			self.pattern[self.current_pattern].track[self.track_current].trig[r][c].selected = false 
 		end
 	end
+	self:add_undo(self.current_pattern,self.track_current,row,col)
 	self.pattern[self.current_pattern].track[self.track_current].trig[row][col].selected = true
 	if not self.pattern[self.current_pattern].track[self.track_current].trig[row][col].active then
-		self.pattern[self.current_pattern].trigs_active = self.pattern[self.current_pattern].trigs_active + 1
 		-- reset the effects to the cached effects
 		for k,e in pairs(self.effect_stored) do 
 			self.pattern[self.current_pattern].track[self.track_current].trig[row][col].effect[k] = {value=e.value,lfo=e.lfo} 
@@ -637,36 +634,33 @@ end
 
 function Drummy:undo()
 	-- insert into redo's and load undo
-	if #self.pattern_undo > 0 then 
+	if #self.undo_trig > 0 then 
 		print("undoing")
-		tab.print(self.pattern[self.current_pattern].track[self.track_current].trig[1][16])
-		local new_pattern = deepcopy(self.pattern_undo[#self.pattern_undo])
-		tab.print(new_pattern[self.current_pattern].track[self.track_current].trig[1][16])
-		table.insert(self.pattern_redo,deepcopy(new_pattern))
-		self.pattern = deepcopy(new_pattern)
-		tab.print(self.pattern[self.current_pattern].track[self.track_current].trig[1][16])
+		local d = self.undo_trig[#self.undo_trig]
+		table.remove(self.undo_trig,#self.undo_trig)
+		table.insert(self.redo_trig,{d[1],d[2],d[3],d[4],json.encode(self.pattern[d[1]].track[d[2]].trig[d[3]][d[4]])})
+		self.pattern[d[1]].track[d[2]].trig[d[3]][d[4]]=json.decode(d[5])
 	end
 end
 
 
-function Drummy:add_undo()
+function Drummy:add_undo(pattern_id,track_id,row,col)
 	print("add_undo")
-	tab.print(self.pattern[self.current_pattern].track[self.track_current].trig[1][16])
-	table.insert(self.pattern_undo,deepcopy(self.pattern))
-	tab.print(self.pattern_undo[1][self.current_pattern].track[self.track_current].trig[1][16])
-	if #self.pattern_undo > 10 then 
+	table.insert(self.undo_trig,{pattern_id,track_id,row,col,json.encode(self.pattern[pattern_id].track[track_id].trig[row][col])})
+	if #self.undo_trig > 100 then 
 		print("removing from undo")
-		table.remove(self.pattern_undo,1)
+		table.remove(self.undo_trig,1)
 	end
 end
 
 function Drummy:redo()
 	-- insert into undo's
-	if #self.pattern_redo > 0 then 
+	if #self.redo_trig > 0 then 
 		print("redoing")
-		local new_pattern = deepcopy(self.pattern_redo[#self.pattern_redo])
-		table.insert(self.pattern_undo,{deepcopy(new_pattern)})
-		self.pattern = deepcopy(new_pattern)
+		local d = self.redo_trig[#self.redo_trig]
+		table.remove(self.redo_trig,#self.redo_trig)
+		table.insert(self.undo_trig,{d[1],d[2],d[3],d[4],json.encode(self.pattern[d[1]].track[d[2]].trig[d[3]][d[4]])})
+		self.pattern[d[1]].track[d[2]].trig[d[3]][d[4]]=json.decode(d[5])
 	end
 end
 
