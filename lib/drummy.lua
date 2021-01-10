@@ -88,7 +88,7 @@ function Drummy:new(args)
   o.is_playing = false 
   o.is_recording = false
   o.pressed_trig_area = false 
-  o.pressed_row_top = false 
+  o.pressed_buttons_bar = false
   o.pressed_buttons = {}
   o.pressed_buttons_scale = {}
   o.selected_trig=nil
@@ -306,21 +306,32 @@ function Drummy:get_grid()
 		end
 	end
 
-	-- illuminate active/selected trigs
-	for row=1,4 do 
-		for col=1,64 do 
-			if self.pattern[self.current_pattern].track[self.track_current].trig[row][col].selected then 
+	if self.pressed_buttons_bar then
+		-- illuminate the available area for trigs
+		for row=1,self.pattern[self.current_pattern].track[self.track_current].pos_max[1] do 
+			for col=1,self.pattern[self.current_pattern].track[self.track_current].pos_max[2] do
 				self.visual[row][col] = 14 
-				if self.pattern[self.current_pattern].track[self.track_current].trig[row][col].held ~= nil then 
-					if self.pattern[self.current_pattern].track[self.track_current].trig[row][col].held > 0.4 then 
-						self.visual[row][col] =  self.visual[row][col] * self.blink
+			end
+		end 
+	else
+		-- illuminate active/selected trigs
+		for row=1,4 do 
+			for col=1,64 do
+				if row <=  self.pattern[self.current_pattern].track[self.track_current].pos_max[1] and col <= self.pattern[self.current_pattern].track[self.track_current].pos_max[2] then
+					if self.pattern[self.current_pattern].track[self.track_current].trig[row][col].selected then 
+						self.visual[row][col] = 14 
+						if self.pattern[self.current_pattern].track[self.track_current].trig[row][col].held ~= nil then 
+							if self.pattern[self.current_pattern].track[self.track_current].trig[row][col].held > 0.4 then 
+								self.visual[row][col] =  self.visual[row][col] * self.blink
+							end
+						end
+					elseif self.pattern[self.current_pattern].track[self.track_current].trig[row][col].active then 
+						self.visual[row][col] = 3 
 					end
 				end
-			elseif self.pattern[self.current_pattern].track[self.track_current].trig[row][col].active then 
-				self.visual[row][col] = 3 
 			end
-		end
-	end	
+		end	
+	end
 
 	-- show the effects
 	-- if trig selected, illuminate the status of the effects
@@ -379,15 +390,15 @@ function Drummy:get_grid()
 	-- draw buttons
 	if self.is_playing then 
 		self.visual[8][1] = 15 -- play button
-		self.visual[7][1] = 4  -- stop button
+		self.visual[6][1] = 4  -- stop button
 	else
 		self.visual[8][1] = 4
-		self.visual[7][1] = 15 
+		self.visual[6][1] = 15 
 	end
 	if self.is_recording then 
-		self.visual[6][1] = 15 
+		self.visual[7][1] = 15 -- rec button
 	else
-		self.visual[6][1] = 4
+		self.visual[7][1] = 4
 	end
 
 	-- illuminate currently pressed button
@@ -414,13 +425,16 @@ function Drummy:key_press(row,col,on)
 		self:update_effect(col-1,on)
 	elseif row == 5 and self.effect_id_selected==0  then 
 		self.selected_trig = nil
+		self.pressed_buttons_bar = on 
 	elseif row == 6 and col > 1 and on then 
 		self:press_effect(col-1)
-	elseif row >= 1 and row <= 4 then 
+	elseif row >= 1 and row <= 4 and self.pressed_buttons_bar and on then 
+		self:update_posmax(row,col)
+	elseif row >= 1 and row <= 4 and not self.pressed_buttons_bar then 
 		self:press_trig(row,col,on)
-	elseif row==6 and col==1 then 
-		self:press_rec(on)
 	elseif row==7 and col==1 then 
+		self:press_rec(on)
+	elseif row==6 and col==1 then 
 		self:press_stop(on)
 	elseif row==8 and col==1 then 
 		self:press_play(on)
@@ -433,6 +447,10 @@ function Drummy:key_press(row,col,on)
 	elseif row==7 and col >= 8 and on then 
 		self:press_chain_pattern(col-7)
 	end
+end
+
+function Drummy:update_posmax(row,col)
+	self.pattern[self.current_pattern].track[self.track_current].pos_max = {row,col}
 end
 
 function Drummy:press_chain_pattern(pattern_id)
