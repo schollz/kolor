@@ -185,6 +185,23 @@ function Drummy:new(args)
 end
 
 function Drummy:debounce()
+	if self.selected_trig ~= nil then 
+		local row = self.selected_trig[1]
+		local col = self.selected_trig[2]
+		if self.pressed_buttons[row..","..col] ~= nil and self.pattern[self.current_pattern].track[self.track_current].trig[row][col].held ~= nil then 
+			if current_time() - self.pattern[self.current_pattern].track[self.track_current].trig[row][col].held > 0.4 then 
+				-- copy the effects of the current to the cache
+				self.effect_stored = {}
+				for k,e in pairs(self.pattern[self.current_pattern].track[self.track_current].trig[row][col].effect) do 
+					self.effect_stored[k] = {value=e.value,lfo=e.lfo}
+				end
+				self.show_graphic = {"copied",3}
+				self.pattern[self.current_pattern].track[self.track_current].trig[row][col].held = current_time() - self.pattern[self.current_pattern].track[self.track_current].trig[row][col].held
+				print("copied")
+			end
+		end
+	end
+
 	self.blink_fast = 1-self.blink_fast
 	if self.blink_countdown > 0 then 
 		if self.blink_countdown %2 == 0 then 
@@ -320,11 +337,6 @@ function Drummy:get_grid()
 				if row <=  self.pattern[self.current_pattern].track[self.track_current].pos_max[1] and col <= self.pattern[self.current_pattern].track[self.track_current].pos_max[2] then
 					if self.pattern[self.current_pattern].track[self.track_current].trig[row][col].selected then 
 						self.visual[row][col] = 14 
-						if self.pattern[self.current_pattern].track[self.track_current].trig[row][col].held ~= nil then 
-							if self.pattern[self.current_pattern].track[self.track_current].trig[row][col].held > 0.4 then 
-								self.visual[row][col] =  self.visual[row][col]
-							end
-						end
 					elseif self.pattern[self.current_pattern].track[self.track_current].trig[row][col].active then 
 						self.visual[row][col] = 3 
 					end
@@ -564,15 +576,9 @@ function Drummy:press_trig(row,col,on)
 	-- check if held
 	if not on and self.pattern[self.current_pattern].track[self.track_current].trig[row][col].selected  then
 		-- lifting the button for the second time
-		local hold_time = current_time() - self.pattern[self.current_pattern].track[self.track_current].trig[row][col].held
-		self.pattern[self.current_pattern].track[self.track_current].trig[row][col].held = hold_time
-		if hold_time > 0.4 then 
-			-- copy the effects of the current to the cache
-			self.effect_stored = {}
-			for k,e in pairs(self.pattern[self.current_pattern].track[self.track_current].trig[row][col].effect) do 
-				self.effect_stored[k] = {value=e.value,lfo=e.lfo}
-			end
-			self.show_graphic = {"lfo",3}
+		if self.pattern[self.current_pattern].track[self.track_current].trig[row][col].held ~= nil and self.pattern[self.current_pattern].track[self.track_current].trig[row][col].held > 0.4 then 
+			print("disabling hold")
+			self.pattern[self.current_pattern].track[self.track_current].trig[row][col].held = nil 
 		elseif row==self.selected_trig[1] and col==self.selected_trig[2] and self.pattern[self.current_pattern].track[self.track_current].trig[row][col].pressed then 
 			-- its already been pressed AND
 			-- didn't hold long enough to copy, so deselect
@@ -581,6 +587,7 @@ function Drummy:press_trig(row,col,on)
 			self.pattern[self.current_pattern].track[self.track_current].trig[row][col].selected = false
 			self.pattern[self.current_pattern].track[self.track_current].trig[row][col].active = false
 			self.pattern[self.current_pattern].track[self.track_current].trig[row][col].pressed = false
+			self.pattern[self.current_pattern].track[self.track_current].trig[row][col].held = nil 
 			self.pattern[self.current_pattern].trigs_active = self.pattern[self.current_pattern].trigs_active - 1
 			do return end
 		end
@@ -591,6 +598,8 @@ function Drummy:press_trig(row,col,on)
 
 	if self.selected_trig ~= nil and row==self.selected_trig[1] and col==self.selected_trig[2] and on then 
 		-- do action when lifting
+		print("reseting hold time")
+		print(self.pattern[self.current_pattern].track[self.track_current].trig[row][col].held)
 		self.pattern[self.current_pattern].track[self.track_current].trig[row][col].held = current_time()
 		do return end 	
 	end
