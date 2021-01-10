@@ -18,6 +18,7 @@ local effect_available = {
   	delay = {default={1,nil},value={}},
   	reverb = {default={1,nil},value={}},
   	probability = {default={15,nil},value={}},
+  	lfolfo = {default={1,nil},value={}},
 }
 
 local effect_order = {
@@ -31,8 +32,7 @@ local effect_order = {
 	"sample_length",
 	"retrig",
 	"probability",
-	"delay",
-	"reverb",
+	"lfolfo",
 }
 for i=1,15 do 
 	effect_available.volume.value[i]=(i-1)/14
@@ -45,22 +45,11 @@ for i=1,15 do
 	effect_available.delay.value[i]=(i-1)/14
 	effect_available.reverb.value[i]=(i-1)/14
 	effect_available.probability.value[i]=(i-1)/14
+	effect_available.lfolfo.value[i]=(i-1)/14
 end
 
 local function deepcopy(orig)
 	return {table.unpack(orig)}
-    -- local orig_type = type(orig)
-    -- local copy
-    -- if orig_type == 'table' then
-    --     copy = {}
-    --     for orig_key, orig_value in next, orig, nil do
-    --         copy[deepcopy(orig_key)] = deepcopy(orig_value)
-    --     end
-    --     setmetatable(copy, deepcopy(getmetatable(orig)))
-    -- else -- number, string, boolean, etc
-    --     copy = orig
-    -- end
-    -- return copy
 end
 
 local function current_time()
@@ -71,6 +60,15 @@ local function random_float(lower, greater)
     return lower + math.random()  * (greater - lower);
 end
 
+
+local function calculate_lfo(period,offset)
+  if period==0 then
+    return 1
+  else
+    return math.sin(2*math.pi*current_time()/period+offset)
+  end
+end
+
 local function get_effect(effect,effectname)
 	-- index ranges between 0 and 15 
 	-- tab.print(trig)
@@ -79,8 +77,14 @@ local function get_effect(effect,effectname)
 	local effect_value = effect_available[effectname].value[effect[effectname].value[1]]
 	if effect[effectname].value[2] ~= nil then 
 		-- have range
-		if effect[effectname].lfo ~= 0 then 
+		if effect[effectname].lfo[1] ~= 1 and effectname ~= "lfolfo" then 
+			-- WORK
+			local effect_range = effect_available[effectname].value[effect[effectname].value[2]]-effect_value			
+			local period = effect[effectname].lfo[1] -- HOW TO CALCULATE THIS?
+			-- TODO: check if lfo and hflo and calculate the period from that
+			local range_neg_one_to_one = calculate_lfo(,0)
 			-- TODO calcualte and return lfo modulated value 
+			effect_value = 
 		else
 			-- no LFO? but have range? generate a random value in the range
 			effect_value = random_float(effect_value,effect_available[effectname].value[effect[effectname].value[2]])
