@@ -17,8 +17,12 @@ Engine_Drummy : CroneEngine {
 		});
 
 		(0..5).do({arg i; 
-			SynthDef("player"++i,{ arg t_trig=0, amp=0.0,rate=1.0,pan=0,lpf=20000,resonance=2,hpf=10,sampleStart=0,sampleLength=6,t_gate=0,retrig=0;
-				var snd,bufsnd;
+			SynthDef("player"++i,{ arg t_trig=0, lfolfo=0.0, currentTime=0.0, ampMin=0.0, ampMax=0.0, ampLFOFreqMin=0.0, ampLFOFreqMax=0.0, rate=1.0,pan=0,lpf=20000,resonance=2,hpf=10,sampleStart=0,sampleLength=6,t_gate=0,retrig=0;
+				var amp, snd,bufsnd;
+				amp = SinOsc.kr(
+					SinOsc.kr(lfolfo,(currentTime*2*pi*ampLFOFreqMin).mod(2*pi),mul:(ampLFOFreqMax-ampLFOFreqMin),add:(ampLFOFreqMax+ampLFOFreqMin)/2),
+					(currentTime*2*pi*ampLFOFreqMin).mod(2*pi),mul:(ampMax-ampMin)/2,add:(ampMax+ampMin)/2
+				);
 				bufsnd = PlayBuf.ar(2, sampleBuff[i],
 					rate:rate*BufRateScale.kr(sampleBuff[i]),
 					startPos:sampleStart*BufFrames.kr(sampleBuff[i]),
@@ -44,19 +48,24 @@ Engine_Drummy : CroneEngine {
 			sampleBuff[msg[1]-1] = Buffer.read(context.server,msg[2]);
 		});
 
-		this.addCommand("play","ifffffffff", { arg msg;
+		this.addCommand("play","iffffffffffffff", { arg msg;
 			// lua is sending 1-index
 			samplerPlayer[msg[1]-1].set(
 				\t_trig,1,
-				\amp,msg[2],
-				\rate,msg[3],
-				\pan,msg[4],
-				\lpf,msg[5],
-				\resonance,msg[6],
-				\hpf,msg[7],
-				\sampleStart,msg[8],
-				\sampleLength,msg[9],
-				\retrig,msg[10],
+				\currentTime, msg[2],
+				\ampMin,msg[3],
+				\ampMax,msg[4],
+				\ampLFOFreqMin,msg[5],
+				\ampLFOFreqMax,msg[6],
+				\rate,msg[7],
+				\pan,msg[8],
+				\lpf,msg[9],
+				\resonance,msg[10],
+				\hpf,msg[11],
+				\sampleStart,msg[12],
+				\sampleLength,msg[13],
+				\retrig,msg[14],
+				\lfolfo,msg[15],
 				\t_gate,1
 			);
 		});

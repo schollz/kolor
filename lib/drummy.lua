@@ -45,7 +45,7 @@ for i=1,15 do
 	effect_available.delay.value[i]=(i-1)/14
 	effect_available.reverb.value[i]=(i-1)/14
 	effect_available.probability.value[i]=(i-1)/14
-	effect_available.lfolfo.value[i]=(i-1)/14
+	effect_available.lfolfo.value[i]=i
 end
 
 local function deepcopy(orig)
@@ -61,36 +61,26 @@ local function random_float(lower, greater)
 end
 
 
-local function calculate_lfo(period,offset)
-  if period==0 then
-    return 1
-  else
-    return math.sin(2*math.pi*current_time()/period+offset)
-  end
+local function lfo_freq(index)
+	if index==1 then 
+		do return 0 end 
+	end
+  return 1/((index-1)*clock.get_beat_sec()*2)
 end
 
 local function get_effect(effect,effectname)
 	-- index ranges between 0 and 15 
-	-- tab.print(trig)
-	-- print(effectname,"1",trig.effect[effectname].value[1])
-	-- print(effectname,"2",trig.effect[effectname].value[2])
-	local effect_value = effect_available[effectname].value[effect[effectname].value[1]]
+	local minval = effect_available[effectname].value[effect[effectname].value[1]]
+	local maxval = minval
 	if effect[effectname].value[2] ~= nil then 
-		-- have range
-		if effect[effectname].lfo[1] ~= 1 and effectname ~= "lfolfo" then 
-			-- WORK
-			local effect_range = effect_available[effectname].value[effect[effectname].value[2]]-effect_value			
-			local period = effect[effectname].lfo[1] -- HOW TO CALCULATE THIS?
-			-- TODO: check if lfo and hflo and calculate the period from that
-			local range_neg_one_to_one = calculate_lfo(,0)
-			-- TODO calcualte and return lfo modulated value 
-			effect_value = 
-		else
-			-- no LFO? but have range? generate a random value in the range
-			effect_value = random_float(effect_value,effect_available[effectname].value[effect[effectname].value[2]])
-		end
-	end 
-	return effect_value
+		maxval = effect_available[effectname].value[effect[effectname].value[2]]
+	end
+	local minfreq = lfo_freq(effect[effectname].lfo[1])
+	local maxfreq = minfreq
+	if effect[effectname].lfo[2] ~= nil then 
+		maxfreq = lfo_freq(effect[effectname].lfo[2])
+	end
+	return {minval, maxval, minfreq, maxfreq}
 end
 
 --- instantiate a new drummy
@@ -272,7 +262,9 @@ function Drummy:sixteenth_note(t)
 				end
 			end
 			trig = self.pattern[self.current_pattern].track[i].trig[self.pattern[self.current_pattern].track[i].pos[1]][self.pattern[self.current_pattern].track[i].pos[2]]
-			if trig.active and not self.pattern[self.current_pattern].track[i].muted and math.random() < get_effect(trig.effect,"probability") then 
+			local prob = get_effect(trig.effect,"probability")
+			-- TODO calculate prob lfo
+			if trig.active and not self.pattern[self.current_pattern].track[i].muted and math.random() < prob[1] then 
 				-- emit 
 				d:play_trig(i,trig.effect)
 			end
@@ -292,11 +284,34 @@ function Drummy:play_trig(i,effect)
 	local sample_start = get_effect(effect,"sample_start")
 	local sample_length = get_effect(effect,"sample_length")
 	local retrig = get_effect(effect,"retrig")
-	if pitch < 0 then 
-		sample_start = 1 - sample_start
+	local lfolfo = get_effect(effect,"lfolfo")
+	lfolfo[1] = lfo_freq(lfolfo[1]) -- lfo's lfo
+	if pitch[1] < 0 then 
+		sample_start[1] = 1 - sample_start[1]
+		sample_start[2] = 1 - sample_start[2]
 	end
-	-- print(i,volume,pitch,pan,lpf,resonance,hpf,sample_start,sample_length,retrig)
-	engine.play(i,volume,pitch,pan,lpf,resonance,hpf,sample_start,sample_length,retrig)
+	print(i,current_time(),
+		volume[1],volume[2],volume[3],volume[4],
+		pitch[1],
+		pan[1],
+		lpf[1],
+		resonance[1],
+		hpf[1],
+		sample_start[1],
+		sample_length[1],
+		retrig[1],
+		lfolfo[1])
+	engine.play(i,current_time(),
+		volume[1],volume[2],volume[3],volume[4],
+		pitch[1],
+		pan[1],
+		lpf[1],
+		resonance[1],
+		hpf[1],
+		sample_start[1],
+		sample_length[1],
+		retrig[1],
+		lfolfo[1])
 end
 
 -- returns the visualization of the matrix
@@ -670,6 +685,7 @@ end
 
 function Drummy:press_effect(effect_id)
 	print("press_effect "..effect_id)
+	self.pressed_lfo = false
 	self.pressed_buttons_scale = {} -- reset scale
 	if self.effect_id_selected == effect_id then 
 		self.effect_id_selected = 0
