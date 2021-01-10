@@ -322,7 +322,7 @@ function Drummy:get_grid()
 						self.visual[row][col] = 14 
 						if self.pattern[self.current_pattern].track[self.track_current].trig[row][col].held ~= nil then 
 							if self.pattern[self.current_pattern].track[self.track_current].trig[row][col].held > 0.4 then 
-								self.visual[row][col] =  self.visual[row][col] * self.blink
+								self.visual[row][col] =  self.visual[row][col]
 							end
 						end
 					elseif self.pattern[self.current_pattern].track[self.track_current].trig[row][col].active then 
@@ -572,6 +572,7 @@ function Drummy:press_trig(row,col,on)
 			for k,e in pairs(self.pattern[self.current_pattern].track[self.track_current].trig[row][col].effect) do 
 				self.effect_stored[k] = {value=e.value,lfo=e.lfo}
 			end
+			self.show_graphic = {"lfo",3}
 		elseif row==self.selected_trig[1] and col==self.selected_trig[2] and self.pattern[self.current_pattern].track[self.track_current].trig[row][col].pressed then 
 			-- its already been pressed AND
 			-- didn't hold long enough to copy, so deselect
