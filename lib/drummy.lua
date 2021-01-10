@@ -1,5 +1,6 @@
 lattice = include("lib/lattice")
 graphic_pixels = include("lib/pixels")
+json = include("lib/json")
 local Drummy = {}
 
 engine.name="Drummy"
@@ -44,6 +45,22 @@ for i=1,15 do
 	effect_available.delay.value[i]=(i-1)/14
 	effect_available.reverb.value[i]=(i-1)/14
 	effect_available.probability.value[i]=(i-1)/14
+end
+
+local function deepcopy(orig)
+	return {table.unpack(orig)}
+    -- local orig_type = type(orig)
+    -- local copy
+    -- if orig_type == 'table' then
+    --     copy = {}
+    --     for orig_key, orig_value in next, orig, nil do
+    --         copy[deepcopy(orig_key)] = deepcopy(orig_value)
+    --     end
+    --     setmetatable(copy, deepcopy(getmetatable(orig)))
+    -- else -- number, string, boolean, etc
+    --     copy = orig
+    -- end
+    -- return copy
 end
 
 local function current_time()
@@ -148,17 +165,26 @@ function Drummy:new(args)
 	  	end
   	end
   end
+  o.pattern_undo = {} -- used for undo
+  o.pattern_redo = {} -- used for redo
   -- lattice 
   o.beat_started = 0
   o.beat_current = 0
   o.lattice = lattice:new({
-  	ppqn=4
+  	ppqn=8
   })
   o.sixteenth_note_pattern = o.lattice:new_pattern{
   	action=function(t)
 			o:sixteenth_note(t)
   	end,
   	division=1/16
+  }
+  o.bottom_beat = true
+  o.thirtysecond_note_pattern = o.lattice:new_pattern{
+  	action=function(t)
+			o:thirtysecond_note(t)
+  	end,
+  	division=1/32
   }
   o.lattice:start()
 
@@ -185,22 +211,15 @@ function Drummy:new(args)
 end
 
 function Drummy:debounce()
-	if self.selected_trig ~= nil then 
-		local row = self.selected_trig[1]
-		local col = self.selected_trig[2]
-		if self.pressed_buttons[row..","..col] ~= nil and self.pattern[self.current_pattern].track[self.track_current].trig[row][col].held ~= nil then 
-			if current_time() - self.pattern[self.current_pattern].track[self.track_current].trig[row][col].held > 0.4 then 
-				-- copy the effects of the current to the cache
-				self.effect_stored = {}
-				for k,e in pairs(self.pattern[self.current_pattern].track[self.track_current].trig[row][col].effect) do 
-					self.effect_stored[k] = {value=e.value,lfo=e.lfo}
-				end
-				self.show_graphic = {"copied",3}
-				self.pattern[self.current_pattern].track[self.track_current].trig[row][col].held = current_time() - self.pattern[self.current_pattern].track[self.track_current].trig[row][col].held
-				print("copied")
-			end
-		end
-	end
+	-- TODO ADD COPY SOMEWHERE ELSE
+				-- -- copy the effects of the current to the cache
+				-- self.effect_stored = {}
+				-- for k,e in pairs(self.pattern[self.current_pattern].track[self.track_current].trig[row][col].effect) do 
+				-- 	self.effect_stored[k] = {value=e.value,lfo=e.lfo}
+				-- end
+				-- self.show_graphic = {"copied",3}
+				-- self.pattern[self.current_pattern].track[self.track_current].trig[row][col].held = current_time() - self.pattern[self.current_pattern].track[self.track_current].trig[row][col].held
+				-- print("copied")
 
 	self.blink_fast = 1-self.blink_fast
 	if self.blink_countdown > 0 then 
@@ -218,10 +237,17 @@ function Drummy:debounce()
 	end
 end
 
+function Drummy:thirtysecond_note(t)
+	if self.is_playing then 
+		self.bottom_beat = not self.bottom_beat
+		print(self.bottom_beat)
+	end
+end
 -- sixteenth note is played
 function Drummy:sixteenth_note(t)
 	self.beat_current = t 
 	if self.is_playing then 
+		print(t)
 		-- print(self.beat_current-self.beat_started)
 		for i,_ in ipairs(self.pattern[self.current_pattern].track) do 
 			self.track_playing[i] = false 
@@ -442,8 +468,8 @@ function Drummy:key_press(row,col,on)
 		self:press_effect(col-1)
 	elseif row >= 1 and row <= 4 and self.pressed_buttons_bar and on then 
 		self:update_posmax(row,col)
-	elseif row >= 1 and row <= 4 and not self.pressed_buttons_bar then 
-		self:press_trig(row,col,on)
+	elseif row >= 1 and row <= 4 and not self.pressed_buttons_bar and on then 
+		self:press_trig(row,col)
 	elseif row==7 and col==1 then 
 		self:press_rec(on)
 	elseif row==6 and col==1 then 
@@ -454,10 +480,14 @@ function Drummy:key_press(row,col,on)
 		self:press_track(col-1)
 	elseif row==7 and col >= 2 and col <= 7 and on then 
 		self:press_mute(col-1)
-	elseif row==8 and col >= 8 and on then 
+	elseif row==8 and col >= 8 and col <= 15 and on then 
 		self:press_pattern(col-7)
-	elseif row==7 and col >= 8 and on then 
+	elseif row==7 and col >= 8 and col <= 15 and on then 
 		self:press_chain_pattern(col-7)
+	elseif row==7 and col==16 and on then 
+		self:redo()
+	elseif row==8 and col==16 and on then 
+		self:undo()
 	end
 end
 
@@ -555,6 +585,7 @@ function Drummy:press_play(on)
 	print("press_play")
 	if not self.is_playing then 
 		self.is_playing = true
+		self.bottom_beat = false -- initialize state
 		self.beat_started = self.beat_current
 		-- reset tracks
 		for i,_ in ipairs(self.pattern[self.current_pattern].track) do
@@ -564,7 +595,7 @@ function Drummy:press_play(on)
 end
 
 
-function Drummy:press_trig(row,col,on)
+function Drummy:press_trig(row,col)
 	print("press_trig",row,col,on)
 	if row > self.pattern[self.current_pattern].track[self.track_current].pos_max[1] then 
 		do return end 
@@ -573,47 +604,24 @@ function Drummy:press_trig(row,col,on)
 		do return end 
 	end
 
-	-- check if held
-	if not on and self.pattern[self.current_pattern].track[self.track_current].trig[row][col].selected  then
-		-- lifting the button for the second time
-		if self.pattern[self.current_pattern].track[self.track_current].trig[row][col].held ~= nil and self.pattern[self.current_pattern].track[self.track_current].trig[row][col].held > 0.4 then 
-			print("disabling hold")
-			self.pattern[self.current_pattern].track[self.track_current].trig[row][col].held = nil 
-		elseif row==self.selected_trig[1] and col==self.selected_trig[2] and self.pattern[self.current_pattern].track[self.track_current].trig[row][col].pressed then 
-			-- its already been pressed AND
-			-- didn't hold long enough to copy, so deselect
-			print("deselecting")
-			self.selected_trig = nil
-			self.pattern[self.current_pattern].track[self.track_current].trig[row][col].selected = false
-			self.pattern[self.current_pattern].track[self.track_current].trig[row][col].active = false
-			self.pattern[self.current_pattern].track[self.track_current].trig[row][col].pressed = false
-			self.pattern[self.current_pattern].track[self.track_current].trig[row][col].held = nil 
-			self.pattern[self.current_pattern].trigs_active = self.pattern[self.current_pattern].trigs_active - 1
-			do return end
-		end
-		-- acknowledge its been pressed at least once
-		self.pattern[self.current_pattern].track[self.track_current].trig[row][col].pressed = true
+	if self.pattern[self.current_pattern].track[self.track_current].trig[row][col].selected  then
+		print("deselecting")
+		self.selected_trig = nil
+		self.pattern[self.current_pattern].track[self.track_current].trig[row][col].selected = false
+		self:add_undo()
+		self.pattern[self.current_pattern].track[self.track_current].trig[row][col].active = false
+		self.pattern[self.current_pattern].trigs_active = self.pattern[self.current_pattern].trigs_active - 1
 		do return end
 	end
 
-	if self.selected_trig ~= nil and row==self.selected_trig[1] and col==self.selected_trig[2] and on then 
-		-- do action when lifting
-		print("reseting hold time")
-		print(self.pattern[self.current_pattern].track[self.track_current].trig[row][col].held)
-		self.pattern[self.current_pattern].track[self.track_current].trig[row][col].held = current_time()
-		do return end 	
-	end
 
 	self.selected_trig = nil
 	-- unselect all others and select current
 	for r=1,4 do 
 		for c=1,16 do 
-			self.pattern[self.current_pattern].track[self.track_current].trig[row][col].held = nil
 			self.pattern[self.current_pattern].track[self.track_current].trig[r][c].selected = false 
-			self.pattern[self.current_pattern].track[self.track_current].trig[row][col].pressed = false
 		end
 	end
-	self.pattern[self.current_pattern].track[self.track_current].trig[row][col].held = current_time()
 	self.pattern[self.current_pattern].track[self.track_current].trig[row][col].selected = true
 	if not self.pattern[self.current_pattern].track[self.track_current].trig[row][col].active then
 		self.pattern[self.current_pattern].trigs_active = self.pattern[self.current_pattern].trigs_active + 1
@@ -626,5 +634,40 @@ function Drummy:press_trig(row,col,on)
 	self.selected_trig = {row,col}
 end
 
+
+function Drummy:undo()
+	-- insert into redo's and load undo
+	if #self.pattern_undo > 0 then 
+		print("undoing")
+		tab.print(self.pattern[self.current_pattern].track[self.track_current].trig[1][16])
+		local new_pattern = deepcopy(self.pattern_undo[#self.pattern_undo])
+		tab.print(new_pattern[self.current_pattern].track[self.track_current].trig[1][16])
+		table.insert(self.pattern_redo,deepcopy(new_pattern))
+		self.pattern = deepcopy(new_pattern)
+		tab.print(self.pattern[self.current_pattern].track[self.track_current].trig[1][16])
+	end
+end
+
+
+function Drummy:add_undo()
+	print("add_undo")
+	tab.print(self.pattern[self.current_pattern].track[self.track_current].trig[1][16])
+	table.insert(self.pattern_undo,deepcopy(self.pattern))
+	tab.print(self.pattern_undo[1][self.current_pattern].track[self.track_current].trig[1][16])
+	if #self.pattern_undo > 10 then 
+		print("removing from undo")
+		table.remove(self.pattern_undo,1)
+	end
+end
+
+function Drummy:redo()
+	-- insert into undo's
+	if #self.pattern_redo > 0 then 
+		print("redoing")
+		local new_pattern = deepcopy(self.pattern_redo[#self.pattern_redo])
+		table.insert(self.pattern_undo,{deepcopy(new_pattern)})
+		self.pattern = deepcopy(new_pattern)
+	end
+end
 
 return Drummy
