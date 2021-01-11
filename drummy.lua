@@ -113,7 +113,7 @@ function redraw()
   screen.rect(1,1,128,64)
   screen.fill()
 
-  local gd = d:get_grid()
+  local gd = d:get_visual()
   rows = #gd 
   cols = #gd[1]
   for row=1,rows do 

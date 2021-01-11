@@ -5,6 +5,8 @@ local Drummy = {}
 
 engine.name="Drummy"
 
+
+
 local effect_available = {
   	volume = {default={8,nil},value={}},
   	rate = {default={12,nil},value={-2,-1.5,-1.25,-1,-0.75,-0.5,-0.25,0,0.25,0.5,0.75,1,1.25,1.5,2},lights={15,13,11,9,7,5,3,1,3,5,7,9,11,13,15}},
@@ -264,7 +266,39 @@ function Drummy:new(args)
   end
   o.debouncer:start()
 
+  -- initiate the grid
+  -- grid specific
+	o.g = grid.connect()
+	o.g.key = o.grid_key
+
+  o.grid_refresh = metro.init()
+  o.grid_refresh.time = 0.05
+  o.grid_refresh.event = function()
+  	o:grid_redraw()
+  end
+  o.grid_refresh:start()
+
   return o
+end
+
+function Drummy:grid_key(x,y,z)
+	self:key_press(x,y,z==1)
+	self:grid_redraw()
+end
+
+function Drummy:grid_redraw()
+	  self.g:all(0)
+		local gd = self:get_visual()
+	  rows = #gd 
+	  cols = #gd[1]
+	  for row=1,rows do 
+	    for col=1,cols do 
+	      if gd[row][col] ~= 0 then 
+	      	self.g:led(row,col,gd[row][col])
+	      end
+	    end
+	  end
+	  self.g:refresh()
 end
 
 function Drummy:debounce()
@@ -381,7 +415,7 @@ function Drummy:play_trig(i,effect)
 end
 
 -- returns the visualization of the matrix
-function Drummy:get_grid()
+function Drummy:get_visual()
 	local current_pos = self.pattern[self.current_pattern].track[self.track_current].pos
 	local trig_selected = nil  
 	if self.selected_trig ~= nil then 
@@ -394,8 +428,6 @@ function Drummy:get_grid()
 			self.visual[row][col]=0
 		end
 	end
-
-
 
 	-- show graphic, hijacks everything!
 	if self.show_graphic[2] > 0 then 
