@@ -102,6 +102,11 @@ local function list_files(d,files,recursive)
   return files
 end
 
+local function calculate_lfo(minval,maxval,minfreq,maxfreq,lfolfofreq)
+	local freq = (math.sin(current_time()*2*3.14159*lfolfofreq))*(maxfreq-minfreq)/2+(maxfreq+minfreq)/2
+	return (math.sin(current_time()*2*3.14159*freq))*(maxval-minval)/2+(maxval+minval)/2
+end
+
 local function get_effect(effect,effectname)
 	-- index ranges between 0 and 15 
 	local minval = effect_available[effectname].value[effect[effectname].value[1]]
@@ -278,8 +283,9 @@ function Drummy:new(args)
   o.grid_refresh:start()
 
   -- setup the parameter window
-	params:add_group("DRUM",3)
+	params:add_group("DRUMMY",3)
   params:add_text('save_name_d',"save as...","")
+  local name_folder=_path.data.."drummy/"
   params:set_action("save_name_d",function(y)
     -- prevent banging
     local x=y
@@ -288,10 +294,10 @@ function Drummy:new(args)
       do return end
     end
     -- save
-    o:save(x)
-    params:set("save_message","saved as "..x)
+    -- TODO: show graphic while saving
+    o:save(name_folder..x)
+    params:set("save_message_d","saved as "..x)
   end)
-  local name_folder=_path.data.."drummy/"
   print("name_folder: "..name_folder)
   params:add_file("load_name_d","load",name_folder)
   params:set_action("load_name_d",function(y)
@@ -305,8 +311,9 @@ function Drummy:new(args)
     print("load_name: "..x)
     pathname,filename,ext=string.match(x,"(.-)([^\\/]-%.?([^%.\\/]*))$")
     print("loading "..filename)
+    -- TODO: show graphic while loading
     o:load(filename)
-    params:set("save_message","loaded "..filename..".")
+    params:set("save_message_d","loaded "..filename..".")
   end)
   params:add_text('save_message_d',">","")
 
@@ -408,7 +415,6 @@ function Drummy:sixteenth_note(t)
 				end
 			end
 			trig = self.pattern[self.current_pattern].track[i].trig[self.pattern[self.current_pattern].track[i].pos[1]][self.pattern[self.current_pattern].track[i].pos[2]]
-			-- TODO calculate prob lfo
 			if trig.active then 
 				if self.is_recording and self.effect_id_selected > 0 and i==self.track_current then 
 					-- copy current selected effect to the current trig on currently selected track
@@ -416,7 +422,9 @@ function Drummy:sixteenth_note(t)
 					self.pattern[self.current_pattern].track[i].trig[self.pattern[self.current_pattern].track[i].pos[1]][self.pattern[self.current_pattern].track[i].pos[2]].effect = {value=e.value,lfo=e.lfo}
 				end
 				local prob = get_effect(trig.effect,"probability")
-				if not self.pattern[self.current_pattern].track[i].muted and math.random() < prob[1] then 
+				local lfolfo = get_effect(trig.effect,"lfolfo")
+				local probability = calculate_lfo(prob[1],prob[2],prob[3],prob[4],lfolfo[1])
+				if not self.pattern[self.current_pattern].track[i].muted and math.random() < probability then 
 					-- emit 
 					d:play_trig(i,trig.effect)
 				end
