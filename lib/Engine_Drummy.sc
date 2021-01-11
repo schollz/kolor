@@ -20,11 +20,15 @@ Engine_Drummy : CroneEngine {
 			SynthDef("player"++i,{ arg t_trig=0, lfolfo=0.0, currentTime=0.0, 
 				ampMin=0.0, ampMax=0.0, ampLFOMin=0.0, ampLFOMax=0.0, 
 				rateMin=1.0, rateMax=1.0, rateLFOMin=0.0, rateLFOMax=0.0,
-				panMin=1.0, panMax=1.0, panLFOMin=0.0, panLFOMax=0.0,
-				lpfMin=1.0, lpfMax=1.0, lpfLFOMin=0.0, lpfLFOMax=0.0,
-				resonance=2,hpf=10,sampleStart=0,sampleLength=6,t_gate=0,retrig=0;
+				panMin=0.0, panMax=0.0, panLFOMin=0.0, panLFOMax=0.0,
+				lpfMin=20000.0, lpfMax=20000.0, lpfLFOMin=0.0, lpfLFOMax=0.0,
+				resonanceMin=2.0, resonanceMax=2.0, resonanceLFOMin=0.0, resonanceLFOMax=0.0,
+				hpfMin=10.0, hpfMax=10.0, hpfLFOMin=0.0, hpfLFOMax=0.0,
+				sampleStartMin=0.0, sampleStartMax=0.0, sampleStartLFOMin=0.0, sampleStartLFOMax=0.0,
+				sampleLengthMin=1.0, sampleLengthMax=1.0, sampleLengthLFOMin=0.0, sampleLengthLFOMax=0.0,
+				t_gate=0,retrig=0;
 				
-				var amp, rate, pan, lpf, snd, bufsnd;
+				var amp, rate, pan, lpf, resonance, hpf, sampleStart, sampleLength, snd, bufsnd;
 				
 				// lfo modulation
 				amp = SinOsc.kr(
@@ -42,6 +46,22 @@ Engine_Drummy : CroneEngine {
 				lpf = SinOsc.kr(
 					SinOsc.kr(lfolfo,(currentTime*2*pi*lpfLFOMin).mod(2*pi),mul:(lpfFOMax-lpfLFOMin),add:(lpfLFOMax+lpfLFOMin)/2),
 					(currentTime*2*pi*lpfLFOMin).mod(2*pi),mul:(lpfMax-lpfMin)/2,add:(lpfMax+lpfMin)/2
+				);
+				resonance = SinOsc.kr(
+					SinOsc.kr(lfolfo,(currentTime*2*pi*resonanceLFOMin).mod(2*pi),mul:(resonanceFOMax-resonanceLFOMin),add:(resonanceLFOMax+resonanceLFOMin)/2),
+					(currentTime*2*pi*resonanceLFOMin).mod(2*pi),mul:(resonanceMax-resonanceMin)/2,add:(resonanceMax+resonanceMin)/2
+				);
+				hpf = SinOsc.kr(
+					SinOsc.kr(lfolfo,(currentTime*2*pi*hpfLFOMin).mod(2*pi),mul:(hpfFOMax-hpfLFOMin),add:(hpfLFOMax+hpfLFOMin)/2),
+					(currentTime*2*pi*hpfLFOMin).mod(2*pi),mul:(hpfMax-hpfMin)/2,add:(hpfMax+hpfMin)/2
+				);
+				sampleStart = SinOsc.kr(
+					SinOsc.kr(lfolfo,(currentTime*2*pi*sampleStartLFOMin).mod(2*pi),mul:(sampleStartFOMax-sampleStartLFOMin),add:(sampleStartLFOMax+sampleStartLFOMin)/2),
+					(currentTime*2*pi*sampleStartLFOMin).mod(2*pi),mul:(sampleStartMax-sampleStartMin)/2,add:(sampleStartMax+sampleStartMin)/2
+				);
+				sampleLength = SinOsc.kr(
+					SinOsc.kr(lfolfo,(currentTime*2*pi*sampleLengthLFOMin).mod(2*pi),mul:(sampleLengthFOMax-sampleLengthLFOMin),add:(sampleLengthLFOMax+sampleLengthLFOMin)/2),
+					(currentTime*2*pi*sampleLengthLFOMin).mod(2*pi),mul:(sampleLengthMax-sampleLengthMin)/2,add:(sampleLengthMax+sampleLengthMin)/2
 				);
 				
 				bufsnd = PlayBuf.ar(2, sampleBuff[i],
@@ -69,24 +89,21 @@ Engine_Drummy : CroneEngine {
 			sampleBuff[msg[1]-1] = Buffer.read(context.server,msg[2]);
 		});
 
-		this.addCommand("play","iffffffffffffff", { arg msg;
+		this.addCommand("play","ifffffffffffffffffffffffffffffffffff", { arg msg;
 			// lua is sending 1-index
 			samplerPlayer[msg[1]-1].set(
 				\t_trig,1,
 				\currentTime, msg[2],
-				\ampMin,msg[3],
-				\ampMax,msg[4],
-				\ampLFOMin,msg[5],
-				\ampLFOMax,msg[6],
-				\rate,msg[7],
-				\pan,msg[8],
-				\lpf,msg[9],
-				\resonance,msg[10],
-				\hpf,msg[11],
-				\sampleStart,msg[12],
-				\sampleLength,msg[13],
-				\retrig,msg[14],
-				\lfolfo,msg[15],
+				\ampMin,msg[3],\ampMax,msg[4],\ampLFOMin,msg[5],\ampLFOMax,msg[6],
+				\rateMin,msg[7],\rateMax,msg[8],\rateLFOMin,msg[9],\rateLFOMax,msg[10],
+				\panMin,msg[11],\panMax,msg[12],\panLFOMin,msg[13],\panLFOMax,msg[14],
+				\lpfMin,msg[15],\lpfMax,msg[16],\lpfLFOMin,msg[17],\lpfLFOMax,msg[18],
+				\resonanceMin,msg[19],\resonanceMax,msg[20],\resonanceLFOMin,msg[21],\resonanceLFOMax,msg[22],
+				\hpfMin,msg[23],\hpfMax,msg[24],\hpfLFOMin,msg[25],\hpfLFOMax,msg[26],
+				\sampleStartMin,msg[27],\sampleStartMax,msg[28],\sampleStartLFOMin,msg[29],\sampleStartLFOMax,msg[30],
+				\sampleLengthMin,msg[31],\sampleLengthMax,msg[32],\sampleLengthLFOMin,msg[33],\sampleLengthLFOMax,msg[34],
+				\retrig,msg[35],
+				\lfolfo,msg[36],
 				\t_gate,1
 			);
 		});
