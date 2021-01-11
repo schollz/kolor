@@ -123,11 +123,11 @@ function Drummy:new(args)
   o.track_current = 1
   o.track_playing = {false,false,false,false,false,false}
   o.pattern = {}
-  for i=1,9 do 
+  for i=1,8 do 
   	o.pattern[i] = {}
   	o.pattern[i].next_pattern_queued=i
   	o.pattern[i].next_pattern={}
-  	for j=1,9 do 
+  	for j=1,8 do 
 	  	o.pattern[i].next_pattern[j] = 0
 	  	if i==j then 
 		  	o.pattern[i].next_pattern[j] = 1
@@ -138,8 +138,8 @@ function Drummy:new(args)
 	  	o.pattern[i].track[j] = {
 	  		muted=false,
 	  		pos={1,1},
-	  		pos_max={1,1},
-	  		-- pos_max={4,16},
+	  		--pos_max={1,1},
+	  		pos_max={4,16},
 	  		trig={},
 	  		longest_track=j==1,
 	  	}
@@ -381,7 +381,10 @@ function Drummy:get_grid()
 			end
 			-- show the lfo
 			if e.lfo[1] > 1 or e.lfo[2] ~=nil then 
-				self.visual[5][1] = 15 -- TODO set to the level of the lfo
+				self.visual[5][1] = e.lfo[1]
+				if e.lfo[2] ~= nil then 
+					self.visual[5][1] = self.visual[5][1] + (e.lfo[2]-e.lfo[1])*self.blinky[4]
+				end
 			end		
 		end
 	else
@@ -441,6 +444,17 @@ function Drummy:get_grid()
 			self.visual[6][i+1] = self.visual[6][i+1] * self.blinky[4] 
 		end
 	end
+	if trig_selected ~= nil then 
+		self.visual[6][16] = 14 -- copy ability
+	end
+
+	-- undo/redo
+	if #self.undo_trig > 0 then 
+		self.visual[8][16] = 14
+	end
+	if #self.redo_trig > 0 then 
+		self.visual[7][16] = 14
+	end
 
 	-- illuminate currently playing trig on currently selected track
 	if self.is_playing and self.pattern[self.current_pattern].track[self.track_current].pos[2] > 0 then 
@@ -459,6 +473,7 @@ function Drummy:get_grid()
 			end
 		else
 			self.visual[8][i+1] = 1
+			self.visual[7][i+1] = 14
 		end
 		if i==self.track_current then 
 			self.visual[8][i+1] = self.visual[8][i+1] *self.blinky[6] 
@@ -466,7 +481,7 @@ function Drummy:get_grid()
 	end
 
 	-- illuminate patterns (active and not active)
-	for i=1,9 do 
+	for i=1,8 do 
 		if self.current_pattern == i then 
 			self.visual[8][i+7] = 15 
 		elseif i==self.pattern[self.current_pattern].next_pattern_queued then -- show which is next
@@ -475,7 +490,7 @@ function Drummy:get_grid()
 	end
 
 	-- illuminate markov probability for next pattern
-	for i=1,9 do 
+	for i=1,8 do 
 		self.visual[7][i+7] = self.pattern[self.current_pattern].next_pattern[i]*5
 	end
 
@@ -527,6 +542,8 @@ function Drummy:key_press(row,col,on)
 		self:press_effect(col-1)
 	elseif row == 6 and col == 16 and on then 
 		self:copy_effect()
+	elseif row == 6 and col == 15 and on then 
+		self:paste_effect_to_track()
 	elseif row >= 1 and row <= 4 and self.pressed_buttons_bar and on then 
 		self:update_posmax(row,col)
 	elseif row >= 1 and row <= 4 and not self.pressed_buttons_bar and on then 
@@ -543,6 +560,8 @@ function Drummy:key_press(row,col,on)
 		self:press_mute(col-1)
 	elseif row==8 and col >= 8 and col <= 15 and on then 
 		self:press_pattern(col-7)
+	elseif row==7 and col >= 8 and col <= 15 and on then 
+		self:press_chain_pattern(col-7)
 	elseif row==7 and col >= 8 and col <= 15 and on then 
 		self:press_chain_pattern(col-7)
 	elseif row==7 and col==16 and on then 
@@ -601,6 +620,17 @@ function Drummy:copy_effect()
 			self.effect_stored[k] = {value=e.value,lfo=e.lfo}
 		end
 		self.show_graphic = {"copied",3}
+	end
+end
+
+function Drummy:paste_effect_to_track()
+	-- self.show_graphic = {"pasted",3}
+	for row, _ in ipairs(self.pattern[self.current_pattern].track[self.track_current].trig) do 
+		for col, _ in ipairs(self.pattern[self.current_pattern].track[self.track_current].trig[row]) do 
+			for k,e in pairs(self.effect_stored) do 
+				self.pattern[self.current_pattern].track[self.track_current].trig[row][col].effect[k] = {value=e.value,lfo=e.lfo}
+			end
+		end
 	end
 end
 
