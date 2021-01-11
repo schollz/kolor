@@ -7,7 +7,7 @@ engine.name="Drummy"
 
 local effect_available = {
   	volume = {default={8,nil},value={}},
-  	pitch = {default={12,nil},value={-2,-1.5,-1.25,-1,-0.75,-0.5,-0.25,0,0.25,0.5,0.75,1,1.25,1.5,2},lights={15,13,11,9,7,5,3,1,3,5,7,9,11,13,15}},
+  	rate = {default={12,nil},value={-2,-1.5,-1.25,-1,-0.75,-0.5,-0.25,0,0.25,0.5,0.75,1,1.25,1.5,2},lights={15,13,11,9,7,5,3,1,3,5,7,9,11,13,15}},
   	pan = {default={7,9},value={-7/7,-6/7,-5/7,-4/7,-3/7,-2/7,-1/7,0,1/7,2/7,3/7,4/7,5/7,6/7,7/7},lights={15,13,11,9,7,5,3,1,3,5,7,9,11,13,15}},
   	lpf = {default={15,nil},value={}},
   	resonance = {default={8,nil},value={}},
@@ -23,7 +23,7 @@ local effect_available = {
 
 local effect_order = {
 	"volume",
-	"pitch",
+	"rate",
 	"pan",
 	"lpf",
 	"resonance",
@@ -335,7 +335,7 @@ end
 function Drummy:play_trig(i,effect)
 	self.track_playing[i]=true
 	local volume = get_effect(effect,"volume")
-	local pitch = get_effect(effect,"pitch")
+	local rate = get_effect(effect,"rate")
 	local pan = get_effect(effect,"pan")
 	local lpf = get_effect(effect,"lpf")
 	local resonance = get_effect(effect,"resonance")
@@ -345,13 +345,13 @@ function Drummy:play_trig(i,effect)
 	local retrig = get_effect(effect,"retrig")
 	local lfolfo = get_effect(effect,"lfolfo")
 	lfolfo[1] = lfo_freq(lfolfo[1]) -- lfo's lfo
-	if pitch[1] < 0 then 
+	if rate[1] < 0 then 
 		sample_start[1] = 1 - sample_start[1]
 		sample_start[2] = 1 - sample_start[2]
 	end
 	print(i,current_time(),
 		volume[1],volume[2],volume[3],volume[4],
-		pitch[1],pitch[2],pitch[3],pitch[4],
+		rate[1],rate[2],rate[3],rate[4],
 		pan[1],pan[2],pan[3],pan[4],
 		lpf[1],lpf[2],lpf[3],lpf[4],
 		resonance[1],resonance[2],resonance[3],resonance[4],
@@ -362,7 +362,7 @@ function Drummy:play_trig(i,effect)
 		lfolfo[1])
 	engine.play(i,current_time(),
 		volume[1],volume[2],volume[3],volume[4],
-		pitch[1],pitch[2],pitch[3],pitch[4],
+		rate[1],rate[2],rate[3],rate[4],
 		pan[1],pan[2],pan[3],pan[4],
 		lpf[1],lpf[2],lpf[3],lpf[4],
 		resonance[1],resonance[2],resonance[3],resonance[4],
