@@ -68,6 +68,38 @@ local function lfo_freq(index)
   return 1/((index-1)*clock.get_beat_sec()*2)
 end
 
+local function list_files(d,files,recursive)
+  -- list files in a flat table
+  if d=="." or d=="./" then
+    d=""
+  end
+  if d~="" and string.sub(d,-1)~="/" then
+    d=d.."/"
+  end
+  folders={}
+  if recursive then
+    local cmd="ls -ad "..d.."*/ 2>/dev/null"
+    local f=assert(io.popen(cmd,'r'))
+    local out=assert(f:read('*a'))
+    f:close()
+    for s in out:gmatch("%S+") do
+      if not (string.match(s,"ls: ") or s=="../" or s=="./") then
+        files=list_files(s,files,recursive)
+      end
+    end
+  end
+  do
+    local cmd="ls -p "..d.." | grep -v /"
+    local f=assert(io.popen(cmd,'r'))
+    local out=assert(f:read('*a'))
+    f:close()
+    for s in out:gmatch("%S+") do
+      table.insert(files,d..s)
+    end
+  end
+  return files
+end
+
 local function get_effect(effect,effectname)
 	-- index ranges between 0 and 15 
 	local minval = effect_available[effectname].value[effect[effectname].value[1]]
@@ -101,16 +133,19 @@ function Drummy:new(args)
   o.pressed_trig_area = false 
   o.pressed_lfo = false
   o.pressed_buttons_bar = false
+  o.pressed_stop = false
   o.pressed_buttons = {}
   o.pressed_buttons_scale = {}
+  o.mode_demo = false
+  o.demo_files = {}
   o.selected_trig=nil
   o.effect_id_selected=0
   o.effect_stored = {}
   for k,e in pairs(effect_available) do
   	o.effect_stored[k] = {value=e.default,lfo={1,nil}}
-  	if #e.value < 15 then 
-  		print("UH OH "..k.." DOES NOT HAVE 15 value")
-  	end
+  	-- if #e.value < 15 then 
+  	-- 	print("UH OH "..k.." DOES NOT HAVE 15 value")
+  	-- end
   end
   o.visual = {}
   for i=1,8 do 
@@ -138,8 +173,8 @@ function Drummy:new(args)
 	  	o.pattern[i].track[j] = {
 	  		muted=false,
 	  		pos={1,1},
-	  		--pos_max={1,1},
-	  		pos_max={4,16},
+	  		pos_max={1,1},
+	  		-- pos_max={4,16},
 	  		trig={},
 	  		longest_track=j==1,
 	  	}
@@ -327,6 +362,12 @@ function Drummy:get_grid()
 		for col=1,16 do 
 			self.visual[row][col]=0
 		end
+	end
+
+	-- mode demo, hijacks everything!
+	if self.mode_demo then 
+
+		do return self.visual end
 	end
 
 	-- show graphic, hijacks everything!
@@ -538,7 +579,7 @@ function Drummy:key_press(row,col,on)
 	elseif row == 5 and self.effect_id_selected==0  then 
 		self.selected_trig = nil
 		self.pressed_buttons_bar = on 
-	elseif row == 6 and col >= 1 and col <= 13 and on then 
+	elseif row == 6 and col >= 2 and col <= 13 and on then 
 		self:press_effect(col-1)
 	elseif row == 6 and col == 16 and on then 
 		self:copy_effect()
@@ -551,6 +592,7 @@ function Drummy:key_press(row,col,on)
 	elseif row==7 and col==1 then 
 		self:press_rec(on)
 	elseif row==6 and col==1 then 
+		self.pressed_stop = on 
 		self:press_stop(on)
 	elseif row==8 and col==1 then 
 		self:press_play(on)
@@ -726,9 +768,17 @@ function Drummy:press_effect(effect_id)
 end
 
 function Drummy:press_track(track)
+	print("press_track")
 	self:deselect()
 	self.track_current = track 
 	self.selected_trig = nil
+	if self.pressed_stop then 
+		-- demo track!
+		print("demo mode")
+		self.mode_demo = true 
+		self.demo_files = list_files("/home/we/dust/audio/samples/bank"..track,{},true)
+		do return end
+	end
 	if not self.is_playing then 
 		self:play_trig(track,self.effect_stored)
 	end
@@ -743,6 +793,10 @@ function Drummy:press_rec(on)
 end
 
 function Drummy:press_stop(on)
+	print("press_stop")
+	if on then 
+		self.mode_demo = false 
+	end
 	if self.is_playing then 
 		self.is_playing = false 
 	end
