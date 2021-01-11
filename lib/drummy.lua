@@ -687,11 +687,20 @@ end
 
 function Drummy:copy_effect()
 	if self.selected_trig ~= nil then 
-				-- copy the effects of the current to the cache
-		self.effect_stored = {}
-		for k,e in pairs(self.pattern[self.current_pattern].track[self.track_current].trig[self.selected_trig[1]][self.selected_trig[2]].effect) do 
-			self.effect_stored[k] = {value=e.value,lfo=e.lfo}
+		-- copy the effects of the current to the cache
+		if self.effect_id_selected > 0 then 
+			print("copying active effect from trig")
+			-- copy only the active effect 
+			local e = self.pattern[self.current_pattern].track[self.track_current].trig[self.selected_trig[1]][self.selected_trig[2]].effect[effect_order[self.effect_id_selected]]
+			self.effect_stored[effect_order[self.effect_id_selected]] = {value=e.value,lfo=e.lfo}
+		else
+			print("copying all effects from trig")
+			self.effect_stored = {}
+			for k,e in pairs(self.pattern[self.current_pattern].track[self.track_current].trig[self.selected_trig[1]][self.selected_trig[2]].effect) do 
+				self.effect_stored[k] = {value=e.value,lfo=e.lfo}
+			end
 		end
+
 		self.show_graphic = {"copied",3}
 	end
 end
