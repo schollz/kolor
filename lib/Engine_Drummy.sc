@@ -94,7 +94,7 @@ Engine_Drummy : CroneEngine {
 	}
 
 	free {
-		sampleBuff.free;
-		samplerPlayer.free;
+		(0..5).do({arg i; sampleBuff[i].free});
+		(0..5).do({arg i; samplerPlayer[i].free});
 	}
 }
