@@ -136,8 +136,7 @@ function Drummy:new(args)
   o.pressed_stop = false
   o.pressed_buttons = {}
   o.pressed_buttons_scale = {}
-  o.mode_demo = false
-  o.demo_files = {}
+  o.demo_files = nil
   o.selected_trig=nil
   o.effect_id_selected=0
   o.effect_stored = {}
@@ -157,6 +156,12 @@ function Drummy:new(args)
   o.current_pattern = 1 
   o.track_current = 1
   o.track_playing = {false,false,false,false,false,false}
+  o.track_files = {
+  	"/home/we/dust/code/drummy/samples/kick1.wav",
+  	"/home/we/dust/code/drummy/samples/snare1.wav",
+  	"/home/we/dust/code/drummy/samples/shaker1.wav",
+  	"/home/we/dust/code/drummy/samples/ch1.wav",
+  }
   o.pattern = {}
   for i=1,8 do 
   	o.pattern[i] = {}
@@ -221,10 +226,11 @@ function Drummy:new(args)
   o.lattice:start()
 
   -- load the samples
-  engine.samplefile(1,"/home/we/dust/code/drummy/samples/kick1.wav")
-  engine.samplefile(2,"/home/we/dust/code/drummy/samples/snare1.wav")
-  engine.samplefile(3,"/home/we/dust/code/drummy/samples/shaker1.wav")
-  engine.samplefile(4,"/home/we/dust/code/drummy/samples/ch1.wav")
+  for i=1,6 do 
+  	if o.track_files[i] ~= nil and util.file_exists(o.track_files[i]) then 
+	  	engine.samplefile(i,o.track_files[i])
+	  end
+  end
 
   -- debouncing and blinking
   o.blink_count = 0
@@ -365,8 +371,15 @@ function Drummy:get_grid()
 	end
 
 	-- mode demo, hijacks everything!
-	if self.mode_demo then 
-
+	if self.demo_files ~= nil then 
+		for _,d in ipairs(self.demo_files) do 
+			self.visual[d.row][d.col] = 4 
+			if d.loaded then 
+				self.visual[d.row][d.col] = 14 
+			end
+		end
+		self.visual[8][16] = 14
+		self.visual[8][15] = 7
 		do return self.visual end
 	end
 
@@ -567,7 +580,11 @@ function Drummy:key_press(row,col,on)
 		self.pressed_buttons[row..","..col]=nil
 	end
 
-	if row == 5 and col == 1 and self.effect_id_selected>0 and on then 
+	if self.demo_files ~= nil then
+		if on then  
+			self:press_demo_file(row,col)
+		end
+	elseif row == 5 and col == 1 and self.effect_id_selected>0 and on then 
 		self.pressed_lfo = not self.pressed_lfo
 		if self.pressed_lfo then self.show_graphic = {"lfo",2} end
 	elseif row == 5 and col > 1 and self.effect_id_selected>0  then 
@@ -613,6 +630,44 @@ function Drummy:key_press(row,col,on)
 	end
 end
 
+
+function Drummy:press_demo_file(row,col)
+	print("press_demo_file "..row.." "..col)
+	local track = self.demo_files[1].track
+	if (row==8 and col>=15) then
+		if col == 16 then  
+			local foundfile = false
+			for _,d in ipairs(self.demo_files) do 
+				if d.loaded then 
+					self.track_files[track]=d.filename 
+					break
+				end
+			end
+		end
+		self.demo_files = nil
+		self.pressed_stop = false
+		print(track,self.track_files[track])
+		if track ~= nil then 
+			engine.samplefile(track,self.track_files[track])
+		end
+		do return end
+	end
+	for i, d in ipairs(self.demo_files) do 
+		if d.row == row and d.col == col then 
+			if d.loaded == false then 
+				print("loaded "..d.filename)
+				engine.samplefile(d.track,d.filename)
+				for j, _ in ipairs(self.demo_files) do 
+					self.demo_files[j].loaded = false 
+				end
+				self.demo_files[i].loaded = true
+			else
+				self:play_trig(d.track,self.effect_stored)
+			end
+			break
+		end
+	end
+end
 
 
 function Drummy:update_lfo(scale_id,on)
@@ -775,8 +830,22 @@ function Drummy:press_track(track)
 	if self.pressed_stop then 
 		-- demo track!
 		print("demo mode")
-		self.mode_demo = true 
-		self.demo_files = list_files("/home/we/dust/audio/samples/bank"..track,{},true)
+		local filelist = list_files("/home/we/dust/audio/samples/bank"..track,{},true)
+		self.demo_files = {}
+		local row = 1 
+		local col = 1 
+		for i,f in ipairs(filelist) do 
+			print(row,col,f)
+			table.insert(self.demo_files, {track=track,row=row,col=col,filename=f,loaded=false})
+			col = col + 1 
+			if col > 16 then 
+				row = row + 1 
+				col = 1 
+			end
+			if row == 5 then 
+				break
+			end 
+		end
 		do return end
 	end
 	if not self.is_playing then 
@@ -795,7 +864,7 @@ end
 function Drummy:press_stop(on)
 	print("press_stop")
 	if on then 
-		self.mode_demo = false 
+		self.demo_files = nil 
 	end
 	if self.is_playing then 
 		self.is_playing = false 
