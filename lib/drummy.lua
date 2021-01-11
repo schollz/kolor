@@ -450,15 +450,15 @@ function Drummy:get_grid()
 		end
 	else
 		-- show beats along the track
-		-- for i=0,16 do 
-		-- 	if (i-1)%4 == 0 then 
-		-- 		self.visual[5][i]=14
-		-- 	elseif (i-1)%4 == 2 then 
-		-- 		self.visual[5][i]=4
-		-- 	else
-		-- 		self.visual[5][i]=2
-		-- 	end
-		-- end
+		for i=0,16 do 
+			if (i-1)%4 == 0 then 
+				self.visual[5][i]=6
+			elseif (i-1)%4 == 2 then 
+				self.visual[5][i]=3
+			else
+				self.visual[5][i]=2
+			end
+		end
 	end
 
 	if self.demo_mode then 
@@ -516,6 +516,10 @@ function Drummy:get_grid()
 	end
 	if trig_selected ~= nil then 
 		self.visual[6][16] = 14 -- copy ability
+	end
+	-- show transfer button if effect selected
+	if self.effect_id_selected > 0 then 
+		self.visual[6][15] = 14 
 	end
 
 	-- undo/redo
