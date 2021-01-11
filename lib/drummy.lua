@@ -7,8 +7,8 @@ engine.name="Drummy"
 
 local effect_available = {
   	volume = {default={8,nil},value={}},
-  	pitch = {default={12,nil},value={-2,-1.5,-1.25,-1,-0.75,-0.5,-0.25,0,0.25,0.5,0.75,1,1.25,1.5,2}},
-  	pan = {default={7,9},value={-7/7,-6/7,-5/7,-4/7,-3/7,-2/7,-1/7,0,1/7,2/7,3/7,4/7,5/7,6/7,7/7}},
+  	pitch = {default={12,nil},value={-2,-1.5,-1.25,-1,-0.75,-0.5,-0.25,0,0.25,0.5,0.75,1,1.25,1.5,2},lights={15,13,11,9,7,5,3,1,3,5,7,9,11,13,15}},
+  	pan = {default={7,9},value={-7/7,-6/7,-5/7,-4/7,-3/7,-2/7,-1/7,0,1/7,2/7,3/7,4/7,5/7,6/7,7/7},lights={15,13,11,9,7,5,3,1,3,5,7,9,11,13,15}},
   	lpf = {default={15,nil},value={}},
   	resonance = {default={8,nil},value={}},
   	hpf = {default={1,nil},value={}},
@@ -427,10 +427,15 @@ function Drummy:get_grid()
 				end
 			end
 		else
-			-- draw efect scale
+			-- draw effect scale
 			self.visual[6][self.effect_id_selected+1]=15
-			for i=1,15 do 
-				self.visual[5][i+1]=i
+			for i=1,15 do
+				-- WORK
+				if effect_available[effect_order[self.effect_id_selected]].lights ~= nil then 
+					self.visual[5][i+1]=effect_available[effect_order[self.effect_id_selected]].lights[i]
+				else
+					self.visual[5][i+1]=i
+				end
 			end
 			local value = e.value
 			if value[2] == nil then 
