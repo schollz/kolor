@@ -124,7 +124,6 @@ end
 -- - "ppqn" (number) the number of pulses per quarter note of this superclock, defaults to 96
 -- @treturn table a new lattice
 function Drummy:new(args)
-
 	-- setup object
   local o = setmetatable({}, { __index = Drummy })
   local args = args == nil and {} or args
@@ -270,7 +269,7 @@ function Drummy:new(args)
   -- grid specific
 	o.g = grid.connect()
 	o.g.key = o.grid_key
-
+	-- grid refreshing
   o.grid_refresh = metro.init()
   o.grid_refresh.time = 0.05
   o.grid_refresh.event = function()
@@ -278,7 +277,61 @@ function Drummy:new(args)
   end
   o.grid_refresh:start()
 
+  -- setup the parameter window
+	params:add_group("DRUM",3)
+  params:add_text('save_name_d',"save as...","")
+  params:set_action("save_name_d",function(y)
+    -- prevent banging
+    local x=y
+    params:set("save_name_d","")
+    if x=="" then
+      do return end
+    end
+    -- save
+    o:save(x)
+    params:set("save_message","saved as "..x)
+  end)
+  local name_folder=_path.data.."drummy/"
+  print("name_folder: "..name_folder)
+  params:add_file("load_name_d","load",name_folder)
+  params:set_action("load_name_d",function(y)
+    -- prevent banging
+    local x=y
+    params:set("load_name_d",name_folder)
+    if #x<=#name_folder then
+      do return end
+    end
+    -- load
+    print("load_name: "..x)
+    pathname,filename,ext=string.match(x,"(.-)([^\\/]-%.?([^%.\\/]*))$")
+    print("loading "..filename)
+    o:load(filename)
+    params:set("save_message","loaded "..filename..".")
+  end)
+  params:add_text('save_message_d',">","")
+
+
   return o
+end
+
+function Drummy:save(filename)
+	local data = json.encode(self)
+	file=io.open(filename,"w+")
+	io.output(file)
+	io.write(data)
+	io.close(file)
+end
+
+function Drummy:load(filename)
+  local f=io.open(filename,"rb")
+  local content=f:read("*all")
+  f:close()
+
+	local data = json.decode(content)
+	-- how kosher is this?
+	for k,v in pairs(data) do 
+		self[k] = v
+	end	
 end
 
 function Drummy:grid_key(x,y,z)
