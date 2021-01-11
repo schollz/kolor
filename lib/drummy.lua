@@ -450,15 +450,15 @@ function Drummy:get_grid()
 		end
 	else
 		-- show beats along the track
-		for i=0,16 do 
-			if (i-1)%4 == 0 then 
-				self.visual[5][i]=14
-			elseif (i-1)%4 == 2 then 
-				self.visual[5][i]=4
-			else
-				self.visual[5][i]=2
-			end
-		end
+		-- for i=0,16 do 
+		-- 	if (i-1)%4 == 0 then 
+		-- 		self.visual[5][i]=14
+		-- 	elseif (i-1)%4 == 2 then 
+		-- 		self.visual[5][i]=4
+		-- 	else
+		-- 		self.visual[5][i]=2
+		-- 	end
+		-- end
 	end
 
 	if self.demo_mode then 
@@ -610,12 +610,12 @@ function Drummy:key_press(row,col,on)
 		self.pressed_buttons_bar = on 
 	elseif row == 6 and col >= 2 and col <= 13 and on then 
 		self:press_effect(col-1)
-	elseif row == 6 and col == 16 and on then 
-		self:copy_effect()
-	elseif row == 6 and col == 15 and on then 
-		self:paste_effect_to_track()
 	elseif row == 6 and col == 14 and on then 
 		self:toggle_demo()
+	elseif row == 6 and col == 15 and on then 
+		self:paste_effect_to_track()
+	elseif row == 6 and col == 16 and on then 
+		self:copy_effect()
 	elseif row >= 1 and row <= 4 and self.pressed_buttons_bar and on then 
 		self:update_posmax(row,col)
 	elseif self.demo_mode and row >= 1 and row <= 4 and not self.pressed_buttons_bar and on then 
@@ -706,12 +706,16 @@ function Drummy:copy_effect()
 end
 
 function Drummy:paste_effect_to_track()
+	if self.effect_id_selected == 0 then
+		print("no effect selected")
+		do return end 
+	end
+	local k = effect_order[self.effect_id_selected]
+	local e = self.effect_stored[k]
 	-- self.show_graphic = {"pasted",3}
 	for row, _ in ipairs(self.pattern[self.current_pattern].track[self.track_current].trig) do 
 		for col, _ in ipairs(self.pattern[self.current_pattern].track[self.track_current].trig[row]) do 
-			for k,e in pairs(self.effect_stored) do 
 				self.pattern[self.current_pattern].track[self.track_current].trig[row][col].effect[k] = {value=e.value,lfo=e.lfo}
-			end
 		end
 	end
 end
