@@ -10,18 +10,18 @@ function init()
   
   pattern=1
   patterns = {
-    {
-      {},
-      {},
-      {},
-      {1},
-    },
     -- {
-    --   {1,4,7,10,15},
-    --   {5,11},
     --   {},
-    --   {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16},
+    --   {},
+    --   {},
+    --   {1},
     -- },
+    {
+      {1,4,7,10,15},
+      {5,11},
+      {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16},
+      {},
+    },
     -- {
     --   {1,4,6,9,12},
     --   {5,10,13,16},
@@ -50,10 +50,10 @@ function init()
       end
     end
   end
-  d:key_press(6,1,true)
-  d:key_press(8,3,true)
-  d:key_press(6,1,false)
-  d:key_press(8,3,false)
+  d:key_press(8,2,true)
+  d:key_press(8,2,false)
+  -- d:key_press(6,14,true)
+  -- d:key_press(6,14,false)
   -- d:key_press(6,2,true)
   -- d:key_press(6,2,false)
   -- d:key_press(8,1,true)

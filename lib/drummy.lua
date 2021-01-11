@@ -133,10 +133,8 @@ function Drummy:new(args)
   o.pressed_trig_area = false 
   o.pressed_lfo = false
   o.pressed_buttons_bar = false
-  o.pressed_stop = false
   o.pressed_buttons = {}
   o.pressed_buttons_scale = {}
-  o.demo_files = nil
   o.selected_trig=nil
   o.effect_id_selected=0
   o.effect_stored = {}
@@ -156,12 +154,27 @@ function Drummy:new(args)
   o.current_pattern = 1 
   o.track_current = 1
   o.track_playing = {false,false,false,false,false,false}
-  o.track_files = {
-  	"/home/we/dust/code/drummy/samples/kick1.wav",
-  	"/home/we/dust/code/drummy/samples/snare1.wav",
-  	"/home/we/dust/code/drummy/samples/shaker1.wav",
-  	"/home/we/dust/code/drummy/samples/ch1.wav",
-  }
+  o.demo_mode = false
+  o.track_files_available = {}
+  for i=1,6 do 
+		local filelist = list_files("/home/we/dust/audio/samples/bank"..i,{},true)
+		o.track_files_available[i] = {}
+		local row = 1 
+		local col = 1 
+		for j,f in ipairs(filelist) do 
+			print(row,col,f)
+			table.insert(o.track_files_available[i], {row=row,col=col,filename=f,loaded=false})
+			col = col + 1 
+			if col > 16 then 
+				row = row + 1 
+				col = 1 
+			end
+			if row == 5 then 
+				break
+			end 
+		end
+  end
+  o.track_files = {}
   o.pattern = {}
   for i=1,8 do 
   	o.pattern[i] = {}
@@ -178,10 +191,11 @@ function Drummy:new(args)
 	  	o.pattern[i].track[j] = {
 	  		muted=false,
 	  		pos={1,1},
-	  		pos_max={1,1},
+	  		pos_max={1,16},
 	  		-- pos_max={4,16},
 	  		trig={},
 	  		longest_track=j==1,
+	  		filename="",
 	  	}
 	  	-- fill in default trigs
 	  	for row=1,4 do 
@@ -225,11 +239,15 @@ function Drummy:new(args)
   }
   o.lattice:start()
 
-  -- load the samples
+  -- TODO: LOAD USER FILE HERE BEFORE LOADING TRACK FILES
+  -- if no user file, then load defaults
   for i=1,6 do 
-  	if o.track_files[i] ~= nil and util.file_exists(o.track_files[i]) then 
-	  	engine.samplefile(i,o.track_files[i])
-	  end
+  	o.track_files[i] = o.track_files_available[i][1].filename
+  end
+
+  -- load the filenames into each track
+  for i=1,6 do 
+  	engine.samplefile(i,o.track_files[i])
   end
 
   -- debouncing and blinking
@@ -370,18 +388,7 @@ function Drummy:get_grid()
 		end
 	end
 
-	-- mode demo, hijacks everything!
-	if self.demo_files ~= nil then 
-		for _,d in ipairs(self.demo_files) do 
-			self.visual[d.row][d.col] = 4 
-			if d.loaded then 
-				self.visual[d.row][d.col] = 14 
-			end
-		end
-		self.visual[8][16] = 14
-		self.visual[8][15] = 7
-		do return self.visual end
-	end
+
 
 	-- show graphic, hijacks everything!
 	if self.show_graphic[2] > 0 then 
@@ -454,7 +461,16 @@ function Drummy:get_grid()
 		end
 	end
 
-	if self.pressed_buttons_bar then
+	if self.demo_mode then 
+		-- show demo demo files instead of triggers
+		for _, d in ipairs(self.track_files_available[self.track_current]) do 
+			self.visual[d.row][d.col] = 4 
+			if d.loaded then 
+				self.visual[d.row][d.col] = 14 
+			end
+		end
+		self.visual[6][14] = 15 *self.blinky[3]
+	elseif self.pressed_buttons_bar then
 		-- illuminate the available area for trigs
 		for row=1,self.pattern[self.current_pattern].track[self.track_current].pos_max[1] do 
 			for col=1,self.pattern[self.current_pattern].track[self.track_current].pos_max[2] do
@@ -511,7 +527,7 @@ function Drummy:get_grid()
 	end
 
 	-- illuminate currently playing trig on currently selected track
-	if self.is_playing and self.pattern[self.current_pattern].track[self.track_current].pos[2] > 0 then 
+	if not self.demo_mode and self.is_playing and self.pattern[self.current_pattern].track[self.track_current].pos[2] > 0 then 
 		self.visual[self.pattern[self.current_pattern].track[self.track_current].pos[1]][self.pattern[self.current_pattern].track[self.track_current].pos[2]] = self.visual[self.pattern[self.current_pattern].track[self.track_current].pos[1]][self.pattern[self.current_pattern].track[self.track_current].pos[2]]  + 7
 		if self.visual[self.pattern[self.current_pattern].track[self.track_current].pos[1]][self.pattern[self.current_pattern].track[self.track_current].pos[2]] > 15 then 
 			self.visual[self.pattern[self.current_pattern].track[self.track_current].pos[1]][self.pattern[self.current_pattern].track[self.track_current].pos[2]] = 15 
@@ -573,18 +589,14 @@ end
 
 -- update the state depending on what was pressed
 function Drummy:key_press(row,col,on)
-	print("key_press",row,col,on)
+	-- print("key_press",row,col,on)
 	if on then 
 		self.pressed_buttons[row..","..col]=true
 	else
 		self.pressed_buttons[row..","..col]=nil
 	end
 
-	if self.demo_files ~= nil then
-		if on then  
-			self:press_demo_file(row,col)
-		end
-	elseif row == 5 and col == 1 and self.effect_id_selected>0 and on then 
+	if row == 5 and col == 1 and self.effect_id_selected>0 and on then 
 		self.pressed_lfo = not self.pressed_lfo
 		if self.pressed_lfo then self.show_graphic = {"lfo",2} end
 	elseif row == 5 and col > 1 and self.effect_id_selected>0  then 
@@ -602,14 +614,17 @@ function Drummy:key_press(row,col,on)
 		self:copy_effect()
 	elseif row == 6 and col == 15 and on then 
 		self:paste_effect_to_track()
+	elseif row == 6 and col == 14 and on then 
+		self:toggle_demo()
 	elseif row >= 1 and row <= 4 and self.pressed_buttons_bar and on then 
 		self:update_posmax(row,col)
+	elseif self.demo_mode and row >= 1 and row <= 4 and not self.pressed_buttons_bar and on then 
+		self:press_demo_file(row,col)
 	elseif row >= 1 and row <= 4 and not self.pressed_buttons_bar and on then 
 		self:press_trig(row,col)
 	elseif row==7 and col==1 then 
 		self:press_rec(on)
 	elseif row==6 and col==1 then 
-		self.pressed_stop = on 
 		self:press_stop(on)
 	elseif row==8 and col==1 then 
 		self:press_play(on)
@@ -627,45 +642,6 @@ function Drummy:key_press(row,col,on)
 		self:redo()
 	elseif row==8 and col==16 and on then 
 		self:undo()
-	end
-end
-
-
-function Drummy:press_demo_file(row,col)
-	print("press_demo_file "..row.." "..col)
-	local track = self.demo_files[1].track
-	if (row==8 and col>=15) then
-		if col == 16 then  
-			local foundfile = false
-			for _,d in ipairs(self.demo_files) do 
-				if d.loaded then 
-					self.track_files[track]=d.filename 
-					break
-				end
-			end
-		end
-		self.demo_files = nil
-		self.pressed_stop = false
-		print(track,self.track_files[track])
-		if track ~= nil then 
-			engine.samplefile(track,self.track_files[track])
-		end
-		do return end
-	end
-	for i, d in ipairs(self.demo_files) do 
-		if d.row == row and d.col == col then 
-			if d.loaded == false then 
-				print("loaded "..d.filename)
-				engine.samplefile(d.track,d.filename)
-				for j, _ in ipairs(self.demo_files) do 
-					self.demo_files[j].loaded = false 
-				end
-				self.demo_files[i].loaded = true
-			else
-				self:play_trig(d.track,self.effect_stored)
-			end
-			break
-		end
 	end
 end
 
@@ -822,32 +798,45 @@ function Drummy:press_effect(effect_id)
 	self.show_graphic = {effect_order[effect_id],2}
 end
 
+function Drummy:press_demo_file(row,col)
+	print("press_demo_file "..row.." "..col)
+	for i, d in ipairs(self.track_files_available[self.track_current]) do 
+		if d.row == row and d.col == col then 
+			if d.loaded == false then 
+				print("loaded "..d.filename)
+				engine.samplefile(self.track_current,d.filename)
+				for j, _ in ipairs(self.track_files_available[self.track_current]) do 
+					self.track_files_available[self.track_current][j].loaded = false 
+				end
+				self.track_files_available[self.track_current][i].loaded = true
+			else
+				self:play_trig(self.track_current,self.effect_stored)
+			end
+			break
+		end
+	end
+end
+
+function Drummy:toggle_demo()
+	-- demo track!
+	print("demo mode")
+	self.demo_mode = not self.demo_mode
+	-- determine which of the current tracks is already loaded
+	if self.demo_mode then 
+		for i=1,6 do 
+			for j,d in ipairs(self.track_files_available[i]) do 
+				print(i,self.track_files[i],d.filename,self.track_files[i] == d.filename)
+				self.track_files_available[i][j].loaded = self.track_files[i] == d.filename
+			end
+		end
+	end
+end
+
 function Drummy:press_track(track)
 	print("press_track")
 	self:deselect()
 	self.track_current = track 
 	self.selected_trig = nil
-	if self.pressed_stop then 
-		-- demo track!
-		print("demo mode")
-		local filelist = list_files("/home/we/dust/audio/samples/bank"..track,{},true)
-		self.demo_files = {}
-		local row = 1 
-		local col = 1 
-		for i,f in ipairs(filelist) do 
-			print(row,col,f)
-			table.insert(self.demo_files, {track=track,row=row,col=col,filename=f,loaded=false})
-			col = col + 1 
-			if col > 16 then 
-				row = row + 1 
-				col = 1 
-			end
-			if row == 5 then 
-				break
-			end 
-		end
-		do return end
-	end
 	if not self.is_playing then 
 		self:play_trig(track,self.effect_stored)
 	end
@@ -863,9 +852,6 @@ end
 
 function Drummy:press_stop(on)
 	print("press_stop")
-	if on then 
-		self.demo_files = nil 
-	end
 	if self.is_playing then 
 		self.is_playing = false 
 	end
@@ -886,7 +872,7 @@ end
 
 
 function Drummy:press_trig(row,col)
-	print("press_trig",row,col,on)
+	-- print("press_trig",row,col,on)
 	if row > self.pattern[self.current_pattern].track[self.track_current].pos_max[1] then 
 		do return end 
 	end
