@@ -321,11 +321,18 @@ function Drummy:sixteenth_note(t)
 				end
 			end
 			trig = self.pattern[self.current_pattern].track[i].trig[self.pattern[self.current_pattern].track[i].pos[1]][self.pattern[self.current_pattern].track[i].pos[2]]
-			local prob = get_effect(trig.effect,"probability")
 			-- TODO calculate prob lfo
-			if trig.active and not self.pattern[self.current_pattern].track[i].muted and math.random() < prob[1] then 
-				-- emit 
-				d:play_trig(i,trig.effect)
+			if trig.active then 
+				if self.is_recording and self.effect_id_selected > 0 and i==self.track_current then 
+					-- copy current selected effect to the current trig on currently selected track
+					local e = self.effect_stored[effect_order[self.effect_id_selected]]
+					self.pattern[self.current_pattern].track[i].trig[self.pattern[self.current_pattern].track[i].pos[1]][self.pattern[self.current_pattern].track[i].pos[2]].effect = {value=e.value,lfo=e.lfo}
+				end
+				local prob = get_effect(trig.effect,"probability")
+				if not self.pattern[self.current_pattern].track[i].muted and math.random() < prob[1] then 
+					-- emit 
+					d:play_trig(i,trig.effect)
+				end
 			end
 		end
 	end
@@ -631,12 +638,12 @@ function Drummy:key_press(row,col,on)
 		self:press_demo_file(row,col)
 	elseif row >= 1 and row <= 4 and not self.pressed_buttons_bar and on then 
 		self:press_trig(row,col)
-	elseif row==7 and col==1 then 
-		self:press_rec(on)
-	elseif row==6 and col==1 then 
-		self:press_stop(on)
-	elseif row==8 and col==1 then 
-		self:press_play(on)
+	elseif row==7 and col==1 and on then 
+		self:press_rec()
+	elseif row==6 and col==1 and on then 
+		self:press_stop()
+	elseif row==8 and col==1 and on then 
+		self:press_play()
 	elseif row==8 and col >= 2 and col <= 7 and on then 
 		self:press_track(col-1)
 	elseif row==7 and col >= 2 and col <= 7 and on then 
@@ -654,45 +661,6 @@ function Drummy:key_press(row,col,on)
 	end
 end
 
-
-function Drummy:update_lfo(scale_id,on)
-	print("update_lfo")
-	-- scale_id is between 1 and 15 
-
-	-- update buttons
-	if on then 
-		self.pressed_buttons_scale[scale_id] = true 
-	else
-		self.pressed_buttons_scale[scale_id] = nil 
-		do return end
-	end
-
-	-- determine which buttons are being held
-	buttons_held = {}
-	for k,_ in pairs(self.pressed_buttons_scale) do
-		table.insert(buttons_held,k)
-	end
-	table.sort(buttons_held)
-	if #buttons_held < 1 then 
-		print("no buttons?")
-		do return end
-	end
-	local lfo = {buttons_held[1],nil}
-	if #buttons_held > 1 then 
-		lfo = {buttons_held[1],buttons_held[#buttons_held]}
-	end
-
-	if self.selected_trig ~= nil then 
-		-- simple case, update selected trig 
-		print("updating selected trig effect '"..effect_order[self.effect_id_selected].."' at ("..self.selected_trig[1]..","..self.selected_trig[2]..")")
-		tab.print(self.pattern[self.current_pattern].track[self.track_current].trig[self.selected_trig[1]][self.selected_trig[2]].effect[effect_order[self.effect_id_selected]])
-		self.pattern[self.current_pattern].track[self.track_current].trig[self.selected_trig[1]][self.selected_trig[2]].effect[effect_order[self.effect_id_selected]].lfo = lfo 
-	else
-		-- update the cache
-		print("updating effect_store")
-		self.effect_stored[effect_order[self.effect_id_selected]].lfo = lfo
-	end
-end
 
 function Drummy:copy_effect()
 	if self.selected_trig ~= nil then 
@@ -796,7 +764,10 @@ function Drummy:update_effect(scale_id,on)
 		value = {buttons_held[1],buttons_held[#buttons_held]}
 	end
 
-	if self.selected_trig ~= nil then 
+	if self.is_playing and self.is_recording then 
+		-- update trig at current position, done in the player
+		self.effect_stored[effect_order[self.effect_id_selected]].value = value
+	elseif self.selected_trig ~= nil then 
 		-- simple case, update selected trig 
 		print("updating selected trig effect '"..effect_order[self.effect_id_selected].."' at ("..self.selected_trig[1]..","..self.selected_trig[2]..")")
 		tab.print(self.pattern[self.current_pattern].track[self.track_current].trig[self.selected_trig[1]][self.selected_trig[2]].effect[effect_order[self.effect_id_selected]])
@@ -805,6 +776,49 @@ function Drummy:update_effect(scale_id,on)
 		-- update the cache
 		print("updating effect_store")
 		self.effect_stored[effect_order[self.effect_id_selected]].value = value
+	end
+end
+
+
+function Drummy:update_lfo(scale_id,on)
+	print("update_lfo")
+	-- scale_id is between 1 and 15 
+
+	-- update buttons
+	if on then 
+		self.pressed_buttons_scale[scale_id] = true 
+	else
+		self.pressed_buttons_scale[scale_id] = nil 
+		do return end
+	end
+
+	-- determine which buttons are being held
+	buttons_held = {}
+	for k,_ in pairs(self.pressed_buttons_scale) do
+		table.insert(buttons_held,k)
+	end
+	table.sort(buttons_held)
+	if #buttons_held < 1 then 
+		print("no buttons?")
+		do return end
+	end
+	local lfo = {buttons_held[1],nil}
+	if #buttons_held > 1 then 
+		lfo = {buttons_held[1],buttons_held[#buttons_held]}
+	end
+
+	if self.is_playing and self.is_recording then 
+		-- update trig at current position, done in the player
+		self.effect_stored[effect_order[self.effect_id_selected]].lfo = lfo
+	elseif self.selected_trig ~= nil then 
+		-- simple case, update selected trig 
+		print("updating selected trig effect '"..effect_order[self.effect_id_selected].."' at ("..self.selected_trig[1]..","..self.selected_trig[2]..")")
+		tab.print(self.pattern[self.current_pattern].track[self.track_current].trig[self.selected_trig[1]][self.selected_trig[2]].effect[effect_order[self.effect_id_selected]])
+		self.pattern[self.current_pattern].track[self.track_current].trig[self.selected_trig[1]][self.selected_trig[2]].effect[effect_order[self.effect_id_selected]].lfo = lfo 
+	else
+		-- update the cache
+		print("updating effect_store")
+		self.effect_stored[effect_order[self.effect_id_selected]].lfo = lfo
 	end
 end
 
@@ -868,18 +882,17 @@ function Drummy:press_mute(track)
 		self.pattern[self.current_pattern].track[track].muted = not self.pattern[self.current_pattern].track[track].muted 
 end
 
-function Drummy:press_rec(on)
-
+function Drummy:press_rec()
+	print("press_rec")
+	self.is_recording = not self.is_recording
 end
 
-function Drummy:press_stop(on)
+function Drummy:press_stop()
 	print("press_stop")
-	if self.is_playing then 
-		self.is_playing = false 
-	end
+	self.is_playing = false 
 end
 
-function Drummy:press_play(on)
+function Drummy:press_play()
 	print("press_play")
 	if not self.is_playing then 
 		self.is_playing = true
