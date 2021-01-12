@@ -2,7 +2,7 @@
 
 every light in sequence.
 
-![title](/docs/title.jpg)
+![title](/docs/grid.jpg)
 
 this script is born out an exploration of sampler sequencers. i drew inspiration from the op-z and model:samples (though i don't own these i was inspired by how i think they are supposed to work). i had five goals making this sample sequencer:
 
@@ -13,12 +13,6 @@ this script is born out an exploration of sampler sequencers. i drew inspiration
 5. stereo samples! because uncorrelated noise in both ears sounds awesome.
 
 at the end i was able to only compromise on a few things.
-
-### known bugs
-
-- retrig doesn't work (yet). there are a couple ways to implement it but i'm still waiting for an easy way.
-- delay doesn't work (yet). still need to work out supercollider buses.
-
 
 ### at a glance
 

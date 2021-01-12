@@ -1020,10 +1020,7 @@ function Drummy:press_track(track)
 	print("press_track")
 	self:deselect()
 	self.track_current = track 
-	self.selected_trig = nil
-	if not self.is_playing then 
-		self:play_trig(track,self.effect_stored,self.pattern[self.current_pattern].track[track].choke)
-	end
+	self:play_trig(track,self.effect_stored,self.pattern[self.current_pattern].track[track].choke)
 end
 
 function Drummy:press_mute_choke(track)

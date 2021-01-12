@@ -68,9 +68,9 @@ Engine_Drummy : CroneEngine {
 					Phasor.ar(
 						trig:t_trig,
 						rate:BufRateScale.kr(sampleBufnum)*rate,
-						start:sampleStart*BufFrames.kr(sampleBufnum),
-						end:sampleEnd*BufFrames.kr(sampleBufnum),
-						resetPos:sampleStart*BufFrames.kr(sampleBufnum)
+						start:(sampleStart*rate.isPositive+sampleEnd*rate.isPositive)*BufFrames.kr(sampleBufnum),
+						end:(sampleEnd*rate.isPositive+sampleStart*rate.isNegative)*BufFrames.kr(sampleBufnum),
+						resetPos:(sampleStart*rate.isPositive+sampleEnd*rate.isNegative)*BufFrames.kr(sampleBufnum)
 					)
 					loop:1,
 					interpolation:2
