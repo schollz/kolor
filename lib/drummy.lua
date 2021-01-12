@@ -450,14 +450,14 @@ function Drummy:emit_note(division)
 			local probability = calculate_lfo(prob[1],prob[2],prob[3],prob[4],lfolfo[1])
 			if not self.pattern[self.current_pattern].track[i].muted and math.random() < probability then 
 				-- emit 
-				d:play_trig(self.pattern[self.current_pattern].track[i].choke,trig.effect)
+				d:play_trig(i,trig.effect,self.pattern[self.current_pattern].track[i].choke)
 			end
 		end 
 		::continue::
 	end
 end
 
-function Drummy:play_trig(i,effect)
+function Drummy:play_trig(i,effect,choke)
 	self.track_playing[i]=true
 	local volume = get_effect(effect,"volume")
 	local rate = get_effect(effect,"rate")
@@ -485,7 +485,7 @@ function Drummy:play_trig(i,effect)
 		sample_end[1],sample_end[2],sample_end[3],sample_end[4],
 		retrig[1],
 		lfolfo[1])
-	engine.play(i,current_time(),
+	engine.play(choke,current_time(),
 		volume[1],volume[2],volume[3],volume[4],
 		rate[1],rate[2],rate[3],rate[4],
 		pan[1],pan[2],pan[3],pan[4],
@@ -495,7 +495,7 @@ function Drummy:play_trig(i,effect)
 		sample_start[1],sample_start[2],sample_start[3],sample_start[4],
 		sample_end[1],sample_end[2],sample_end[3],sample_end[4],
 		retrig[1],
-		lfolfo[1])
+		lfolfo[1],i)
 end
 
 -- returns the visualization of the matrix
@@ -608,16 +608,17 @@ function Drummy:get_visual()
 	else
 		-- illuminate active/selected trigs
 		for row=1,4 do 
-			for col=1,64 do
+			for col=1,16 do
 				if row <=  self.pattern[self.current_pattern].track[self.track_current].pos_max[1] and col <= self.pattern[self.current_pattern].track[self.track_current].pos_max[2] then
+					self.visual[row][col]=1
 					if self.pattern[self.current_pattern].track[self.track_current].trig[row][col].active then 
 						-- determine the current effect and display the effect it
 						if self.effect_id_selected > 0 and self.pattern[self.current_pattern].track[self.track_current].trig[row][col].effect[effect_order[self.effect_id_selected]] ~= nil then 
 							self.visual[row][col] = self.pattern[self.current_pattern].track[self.track_current].trig[row][col].effect[effect_order[self.effect_id_selected]].value[1]
 						else
-							self.visual[row][col] = 3 
+							self.visual[row][col] = 7 
 						end
-						if self.pattern[self.current_pattern].track[self.track_current].trig[row][col].selected then 
+						if self.selected_trig ~= nil and row==self.selected_trig[1] and col==self.selected_trig[2] then 
 							self.visual[row][col] = self.visual[row][col] * self.blinky[1]
 						end
 					end
@@ -764,6 +765,7 @@ function Drummy:key_press(row,col,on)
 	elseif row == 5 and self.effect_id_selected==0  then 
 		self.selected_trig = nil
 		self.pressed_buttons_bar = on 
+		self:deselect()
 	elseif row == 6 and col >= 2 and col <= 13 and on then 
 		self:press_effect(col-1)
 	elseif row == 8 and col == 16 and on then 
@@ -809,6 +811,9 @@ end
 
 function Drummy:choose_division()
 	self.choosing_division = not self.choosing_division
+	if self.choosing_division then 
+		self.show_graphic = {"clock",3}
+	end
 end
 
 function Drummy:copy_effect()
@@ -881,7 +886,6 @@ end
 
 function Drummy:deselect()
 	if self.selected_trig ~= nil then 
-		self.pattern[self.current_pattern].track[self.track_current].trig[self.selected_trig[1]][self.selected_trig[2]].selected = false
 		self.selected_trig = nil
 	end
 end
@@ -989,7 +993,7 @@ function Drummy:press_demo_file(row,col)
 				end
 				self.track_files_available[self.track_current][i].loaded = true
 			else
-				self:play_trig(self.pattern[self.current_pattern].track[self.track_current].choke,self.effect_stored)
+				self:play_trig(self.track_current,self.effect_stored,self.pattern[self.current_pattern].track[self.track_current].choke)
 			end
 			break
 		end
@@ -1018,7 +1022,7 @@ function Drummy:press_track(track)
 	self.track_current = track 
 	self.selected_trig = nil
 	if not self.is_playing then 
-		self:play_trig(self.pattern[self.current_pattern].track[track].choke,self.effect_stored)
+		self:play_trig(track,self.effect_stored,self.pattern[self.current_pattern].track[track].choke)
 	end
 end
 
@@ -1071,24 +1075,14 @@ function Drummy:press_trig(row,col)
 		do return end 
 	end
 
-	if self.pattern[self.current_pattern].track[self.track_current].trig[row][col].selected  then
-		print("deselecting")
-		self.selected_trig = nil
-		self.pattern[self.current_pattern].track[self.track_current].trig[row][col].selected = false
-		self:add_undo(self.current_pattern,self.track_current,row,col)
+	if self.selected_trig~=nil and self.selected_trig[1] == row and self.selected_trig[2] == col  then
+		print("deactivating")
 		self.pattern[self.current_pattern].track[self.track_current].trig[row][col].active = false
+		self:deselect()
 		do return end
 	end
 
 	self.selected_trig = nil
-	-- unselect all others and select current
-	for r=1,4 do 
-		for c=1,16 do 
-			self.pattern[self.current_pattern].track[self.track_current].trig[r][c].selected = false 
-		end
-	end
-	self:add_undo(self.current_pattern,self.track_current,row,col)
-	self.pattern[self.current_pattern].track[self.track_current].trig[row][col].selected = true
 	if not self.pattern[self.current_pattern].track[self.track_current].trig[row][col].active then
 		-- reset the effects to the cached effects
 		for k,e in pairs(self.effect_stored) do 
