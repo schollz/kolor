@@ -15,7 +15,7 @@ local effect_available = {
   	resonance = {default={8,nil},value={}},
   	hpf = {default={1,nil},value={}},
   	sample_start = {default={1,nil},value={}},
-  	sample_length = {default={15,nil},value={}},
+  	sample_end = {default={15,nil},value={}},
   	retrig = {default={1,nil},value={}},
   	delay = {default={1,nil},value={}},
   	reverb = {default={1,nil},value={}},
@@ -31,7 +31,7 @@ local effect_order = {
 	"resonance",
 	"hpf",
 	"sample_start",
-	"sample_length",
+	"sample_end",
 	"retrig",
 	"probability",
 	"lfolfo",
@@ -42,7 +42,7 @@ for i=1,15 do
 	effect_available.resonance.value[i]=(4*i)/15
 	effect_available.hpf.value[i]=40*math.pow(1.5,i)
 	effect_available.sample_start.value[i]=(i-1)/14
-	effect_available.sample_length.value[i]=(i-1)/14
+	effect_available.sample_end.value[i]=(i-1)/14
 	effect_available.retrig.value[i]=(i-1)
 	effect_available.delay.value[i]=(i-1)/14
 	effect_available.reverb.value[i]=(i-1)/14
@@ -109,6 +109,10 @@ end
 
 local function get_effect(effect,effectname)
 	-- index ranges between 0 and 15 
+	if effect == nil or effect[effectname] == nil then 
+		do return end 
+	end
+
 	local minval = effect_available[effectname].value[effect[effectname].value[1]]
 	local maxval = minval
 	if effect[effectname].value[2] ~= nil then 
@@ -206,7 +210,7 @@ function Drummy:new(args)
 	  	-- fill in default trigs
 	  	for row=1,4 do 
   			o.pattern[i].track[j].trig[row]={}
-	  		for col=1,64 do
+	  		for col=1,16 do
 	  			o.pattern[i].track[j].trig[row][col]={
 	  				playing=false,
 	  				selected=false,
@@ -312,7 +316,7 @@ function Drummy:new(args)
     pathname,filename,ext=string.match(x,"(.-)([^\\/]-%.?([^%.\\/]*))$")
     print("loading "..filename)
     -- TODO: show graphic while loading
-    o:load(filename)
+    o:load(x)
     params:set("save_message_d","loaded "..filename..".")
   end)
   params:add_text('save_message_d',">","")
@@ -322,7 +326,12 @@ function Drummy:new(args)
 end
 
 function Drummy:save(filename)
-	local data = json.encode(self)
+	print("saving to "..filename)
+	local data = json.encode({
+		pattern=self.pattern,
+		effect_stored=self.effect_stored,
+		track_files=self.track_files,
+	})
 	file=io.open(filename,"w+")
 	io.output(file)
 	io.write(data)
@@ -330,6 +339,8 @@ function Drummy:save(filename)
 end
 
 function Drummy:load(filename)
+	self.show_graphic = {"load",3000000}
+	print("opening "..filename)
   local f=io.open(filename,"rb")
   local content=f:read("*all")
   f:close()
@@ -339,6 +350,10 @@ function Drummy:load(filename)
 	for k,v in pairs(data) do 
 		self[k] = v
 	end	
+  for i=1,6 do 
+  	engine.samplefile(i,self.track_files[i])
+  end
+	self.show_graphic = {"load",1}
 end
 
 function Drummy:grid_key(x,y,z)
@@ -419,7 +434,7 @@ function Drummy:sixteenth_note(t)
 				if self.is_recording and self.effect_id_selected > 0 and i==self.track_current then 
 					-- copy current selected effect to the current trig on currently selected track
 					local e = self.effect_stored[effect_order[self.effect_id_selected]]
-					self.pattern[self.current_pattern].track[i].trig[self.pattern[self.current_pattern].track[i].pos[1]][self.pattern[self.current_pattern].track[i].pos[2]].effect = {value=e.value,lfo=e.lfo}
+					self.pattern[self.current_pattern].track[i].trig[self.pattern[self.current_pattern].track[i].pos[1]][self.pattern[self.current_pattern].track[i].pos[2]].effect[effect_order[self.effect_id_selected]] = {value=e.value,lfo=e.lfo}
 				end
 				local prob = get_effect(trig.effect,"probability")
 				local lfolfo = get_effect(trig.effect,"lfolfo")
@@ -443,7 +458,7 @@ function Drummy:play_trig(i,effect)
 	local resonance = get_effect(effect,"resonance")
 	local hpf = get_effect(effect,"hpf")
 	local sample_start = get_effect(effect,"sample_start")
-	local sample_length = get_effect(effect,"sample_length")
+	local sample_end = get_effect(effect,"sample_end")
 	local retrig = get_effect(effect,"retrig")
 	local lfolfo = get_effect(effect,"lfolfo")
 	lfolfo[1] = lfo_freq(lfolfo[1]) -- lfo's lfo
@@ -459,7 +474,7 @@ function Drummy:play_trig(i,effect)
 		resonance[1],resonance[2],resonance[3],resonance[4],
 		hpf[1],hpf[2],hpf[3],hpf[4],
 		sample_start[1],sample_start[2],sample_start[3],sample_start[4],
-		sample_length[1],sample_length[2],sample_length[3],sample_length[4],
+		sample_end[1],sample_end[2],sample_end[3],sample_end[4],
 		retrig[1],
 		lfolfo[1])
 	engine.play(i,current_time(),
@@ -470,7 +485,7 @@ function Drummy:play_trig(i,effect)
 		resonance[1],resonance[2],resonance[3],resonance[4],
 		hpf[1],hpf[2],hpf[3],hpf[4],
 		sample_start[1],sample_start[2],sample_start[3],sample_start[4],
-		sample_length[1],sample_length[2],sample_length[3],sample_length[4],
+		sample_end[1],sample_end[2],sample_end[3],sample_end[4],
 		retrig[1],
 		lfolfo[1])
 end
@@ -505,7 +520,7 @@ function Drummy:get_visual()
 	-- draw bar gradient / scale / lfo scale
 	if self.effect_id_selected > 0 then 
 		-- if trig is selected, then show the current value
-		local e = self.effect_stored[effect_order[self.effect_id_selected]]
+		e = self.effect_stored[effect_order[self.effect_id_selected]]
 		if trig_selected ~= nil then 
 			e = trig_selected.effect[effect_order[self.effect_id_selected]]
 		end
@@ -589,7 +604,7 @@ function Drummy:get_visual()
 				if row <=  self.pattern[self.current_pattern].track[self.track_current].pos_max[1] and col <= self.pattern[self.current_pattern].track[self.track_current].pos_max[2] then
 					if self.pattern[self.current_pattern].track[self.track_current].trig[row][col].active then 
 						-- determine the current effect and display the effect it
-						if self.effect_id_selected > 0 then 
+						if self.effect_id_selected > 0 and self.pattern[self.current_pattern].track[self.track_current].trig[row][col].effect[effect_order[self.effect_id_selected]] ~= nil then 
 							self.visual[row][col] = self.pattern[self.current_pattern].track[self.track_current].trig[row][col].effect[effect_order[self.effect_id_selected]].value[1]
 						else
 							self.visual[row][col] = 3 
@@ -857,10 +872,7 @@ function Drummy:update_effect(scale_id,on)
 		value = {buttons_held[1],buttons_held[#buttons_held]}
 	end
 
-	if self.is_playing and self.is_recording then 
-		-- update trig at current position, done in the player
-		self.effect_stored[effect_order[self.effect_id_selected]].value = value
-	elseif self.selected_trig ~= nil then 
+	if self.selected_trig ~= nil then 
 		-- simple case, update selected trig 
 		print("updating selected trig effect '"..effect_order[self.effect_id_selected].."' at ("..self.selected_trig[1]..","..self.selected_trig[2]..")")
 		tab.print(self.pattern[self.current_pattern].track[self.track_current].trig[self.selected_trig[1]][self.selected_trig[2]].effect[effect_order[self.effect_id_selected]])
@@ -868,7 +880,7 @@ function Drummy:update_effect(scale_id,on)
 	else
 		-- update the cache
 		print("updating effect_store")
-		self.effect_stored[effect_order[self.effect_id_selected]].value = value
+		self.effect_stored[effect_order[self.effect_id_selected]].value = {value[1],value[2]}
 	end
 end
 
@@ -900,10 +912,7 @@ function Drummy:update_lfo(scale_id,on)
 		lfo = {buttons_held[1],buttons_held[#buttons_held]}
 	end
 
-	if self.is_playing and self.is_recording then 
-		-- update trig at current position, done in the player
-		self.effect_stored[effect_order[self.effect_id_selected]].lfo = lfo
-	elseif self.selected_trig ~= nil then 
+	if self.selected_trig ~= nil then 
 		-- simple case, update selected trig 
 		print("updating selected trig effect '"..effect_order[self.effect_id_selected].."' at ("..self.selected_trig[1]..","..self.selected_trig[2]..")")
 		tab.print(self.pattern[self.current_pattern].track[self.track_current].trig[self.selected_trig[1]][self.selected_trig[2]].effect[effect_order[self.effect_id_selected]])
@@ -911,7 +920,7 @@ function Drummy:update_lfo(scale_id,on)
 	else
 		-- update the cache
 		print("updating effect_store")
-		self.effect_stored[effect_order[self.effect_id_selected]].lfo = lfo
+		self.effect_stored[effect_order[self.effect_id_selected]].lfo = {lfo[1],lfo[2]}
 	end
 end
 
@@ -952,6 +961,7 @@ function Drummy:toggle_demo()
 	self.demo_mode = not self.demo_mode
 	-- determine which of the current tracks is already loaded
 	if self.demo_mode then 
+		self.show_graphic = {"bank",3}
 		for i=1,6 do 
 			for j,d in ipairs(self.track_files_available[i]) do 
 				print(i,self.track_files[i],d.filename,self.track_files[i] == d.filename)

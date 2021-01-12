@@ -25,10 +25,10 @@ Engine_Drummy : CroneEngine {
 				resonanceMin=2.0, resonanceMax=2.0, resonanceLFOMin=0.0, resonanceLFOMax=0.0,
 				hpfMin=10.0, hpfMax=10.0, hpfLFOMin=0.0, hpfLFOMax=0.0,
 				sampleStartMin=0.0, sampleStartMax=0.0, sampleStartLFOMin=0.0, sampleStartLFOMax=0.0,
-				sampleLengthMin=1.0, sampleLengthMax=1.0, sampleLengthLFOMin=0.0, sampleLengthLFOMax=0.0,
+				sampleEndMin=1.0, sampleEndMax=1.0, sampleEndLFOMin=0.0, sampleEndLFOMax=0.0,
 				t_gate=0,retrig=0;
 				
-				var amp, rate, pan, lpf, resonance, hpf, sampleStart, sampleLength, snd, bufsnd;
+				var amp, rate, pan, lpf, resonance, hpf, sampleStart, sampleEnd, snd, bufsnd;
 				
 				// lfo modulation
 				amp = SinOsc.kr(
@@ -36,46 +36,57 @@ Engine_Drummy : CroneEngine {
 					(currentTime*2*pi*ampLFOMin).mod(2*pi),mul:(ampMax-ampMin)/2,add:(ampMax+ampMin)/2
 				);
 				rate = SinOsc.kr(
-					SinOsc.kr(lfolfo,(currentTime*2*pi*rateLFOMin).mod(2*pi),mul:(rateFOMax-rateLFOMin),add:(rateLFOMax+rateLFOMin)/2),
+					SinOsc.kr(lfolfo,(currentTime*2*pi*rateLFOMin).mod(2*pi),mul:(rateLFOMax-rateLFOMin),add:(rateLFOMax+rateLFOMin)/2),
 					(currentTime*2*pi*rateLFOMin).mod(2*pi),mul:(rateMax-rateMin)/2,add:(rateMax+rateMin)/2
 				);
 				pan = SinOsc.kr(
-					SinOsc.kr(lfolfo,(currentTime*2*pi*panLFOMin).mod(2*pi),mul:(panFOMax-panLFOMin),add:(panLFOMax+panLFOMin)/2),
+					SinOsc.kr(lfolfo,(currentTime*2*pi*panLFOMin).mod(2*pi),mul:(panLFOMax-panLFOMin),add:(panLFOMax+panLFOMin)/2),
 					(currentTime*2*pi*panLFOMin).mod(2*pi),mul:(panMax-panMin)/2,add:(panMax+panMin)/2
 				);
 				lpf = SinOsc.kr(
-					SinOsc.kr(lfolfo,(currentTime*2*pi*lpfLFOMin).mod(2*pi),mul:(lpfFOMax-lpfLFOMin),add:(lpfLFOMax+lpfLFOMin)/2),
+					SinOsc.kr(lfolfo,(currentTime*2*pi*lpfLFOMin).mod(2*pi),mul:(lpfLFOMax-lpfLFOMin),add:(lpfLFOMax+lpfLFOMin)/2),
 					(currentTime*2*pi*lpfLFOMin).mod(2*pi),mul:(lpfMax-lpfMin)/2,add:(lpfMax+lpfMin)/2
 				);
 				resonance = SinOsc.kr(
-					SinOsc.kr(lfolfo,(currentTime*2*pi*resonanceLFOMin).mod(2*pi),mul:(resonanceFOMax-resonanceLFOMin),add:(resonanceLFOMax+resonanceLFOMin)/2),
+					SinOsc.kr(lfolfo,(currentTime*2*pi*resonanceLFOMin).mod(2*pi),mul:(resonanceLFOMax-resonanceLFOMin),add:(resonanceLFOMax+resonanceLFOMin)/2),
 					(currentTime*2*pi*resonanceLFOMin).mod(2*pi),mul:(resonanceMax-resonanceMin)/2,add:(resonanceMax+resonanceMin)/2
 				);
 				hpf = SinOsc.kr(
-					SinOsc.kr(lfolfo,(currentTime*2*pi*hpfLFOMin).mod(2*pi),mul:(hpfFOMax-hpfLFOMin),add:(hpfLFOMax+hpfLFOMin)/2),
+					SinOsc.kr(lfolfo,(currentTime*2*pi*hpfLFOMin).mod(2*pi),mul:(hpfLFOMax-hpfLFOMin),add:(hpfLFOMax+hpfLFOMin)/2),
 					(currentTime*2*pi*hpfLFOMin).mod(2*pi),mul:(hpfMax-hpfMin)/2,add:(hpfMax+hpfMin)/2
 				);
 				sampleStart = SinOsc.kr(
-					SinOsc.kr(lfolfo,(currentTime*2*pi*sampleStartLFOMin).mod(2*pi),mul:(sampleStartFOMax-sampleStartLFOMin),add:(sampleStartLFOMax+sampleStartLFOMin)/2),
+					SinOsc.kr(lfolfo,(currentTime*2*pi*sampleStartLFOMin).mod(2*pi),mul:(sampleStartLFOMax-sampleStartLFOMin),add:(sampleStartLFOMax+sampleStartLFOMin)/2),
 					(currentTime*2*pi*sampleStartLFOMin).mod(2*pi),mul:(sampleStartMax-sampleStartMin)/2,add:(sampleStartMax+sampleStartMin)/2
 				);
-				sampleLength = SinOsc.kr(
-					SinOsc.kr(lfolfo,(currentTime*2*pi*sampleLengthLFOMin).mod(2*pi),mul:(sampleLengthFOMax-sampleLengthLFOMin),add:(sampleLengthLFOMax+sampleLengthLFOMin)/2),
-					(currentTime*2*pi*sampleLengthLFOMin).mod(2*pi),mul:(sampleLengthMax-sampleLengthMin)/2,add:(sampleLengthMax+sampleLengthMin)/2
+				sampleEnd = SinOsc.kr(
+					SinOsc.kr(lfolfo,(currentTime*2*pi*sampleEndLFOMin).mod(2*pi),mul:(sampleEndLFOMax-sampleEndLFOMin),add:(sampleEndLFOMax+sampleEndLFOMin)/2),
+					(currentTime*2*pi*sampleEndLFOMin).mod(2*pi),mul:(sampleEndMax-sampleEndMin)/2,add:(sampleEndMax+sampleEndMin)/2
 				);
 				
-				bufsnd = PlayBuf.ar(2, sampleBuff[i],
-					rate:rate*BufRateScale.kr(sampleBuff[i]),
-					startPos:sampleStart*BufFrames.kr(sampleBuff[i]),
-					loop:retrig, // if > 0 then it loops, getting stopped by the envelope
-					trigger:t_trig);
-		        	bufsnd = MoogFF.ar(bufsnd,lpf,resonance);
-		        	bufsnd = HPF.ar(bufsnd,hpf);
+				bufsnd = BufRd.ar(2,sampleBuff[i],
+					Phasor.ar(
+						trig:t_trig,
+						rate:BufRateScale.kr(sampleBuff[i])*rate,
+						start:sampleStart*BufFrames.kr(sampleBuff[i]),
+						end:sampleEnd*BufFrames.kr(sampleBuff[i]),
+						resetPos:sampleStart*BufFrames.kr(sampleBuff[i])
+					)
+					loop:1,
+					interpolation:2
+				);
+				// bufsnd = PlayBuf.ar(2, sampleBuff[i],
+				// 	rate:rate*BufRateScale.kr(sampleBuff[i]),
+				// 	startPos:sampleStart*BufFrames.kr(sampleBuff[i]),
+				// 	loop:retrig, // if > 0 then it loops, getting stopped by the envelope
+				// 	trigger:t_trig);
+	        	bufsnd = MoogFF.ar(bufsnd,lpf,resonance);
+	        	bufsnd = HPF.ar(bufsnd,hpf);
 				snd = Mix.ar([
 					Pan2.ar(bufsnd[0],-1+(2*pan),amp),
 					Pan2.ar(bufsnd[1],1+(2*pan),amp),
 				]);
-				Out.ar(0,snd*EnvGen.ar(Env([0,1, 1, 0], [0.005,sampleLength/(rate.abs)*(retrig+1)*BufDur.kr(sampleBuff[i]),0.005]),gate:t_gate))
+				Out.ar(0,snd*EnvGen.ar(Env([0,1, 1, 0], [0.005,(sampleEnd-sampleStart)/(rate.abs)*(retrig+1)*BufDur.kr(sampleBuff[i]),0.005]),gate:t_gate))
 			}).add;	
 		});
 
@@ -101,7 +112,7 @@ Engine_Drummy : CroneEngine {
 				\resonanceMin,msg[19],\resonanceMax,msg[20],\resonanceLFOMin,msg[21],\resonanceLFOMax,msg[22],
 				\hpfMin,msg[23],\hpfMax,msg[24],\hpfLFOMin,msg[25],\hpfLFOMax,msg[26],
 				\sampleStartMin,msg[27],\sampleStartMax,msg[28],\sampleStartLFOMin,msg[29],\sampleStartLFOMax,msg[30],
-				\sampleLengthMin,msg[31],\sampleLengthMax,msg[32],\sampleLengthLFOMin,msg[33],\sampleLengthLFOMax,msg[34],
+				\sampleEndMin,msg[31],\sampleEndMax,msg[32],\sampleEndLFOMin,msg[33],\sampleEndLFOMax,msg[34],
 				\retrig,msg[35],
 				\lfolfo,msg[36],
 				\t_gate,1
