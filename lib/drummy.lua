@@ -145,6 +145,7 @@ function Drummy:new(args)
   o.pressed_buttons_bar = false
   o.pressed_buttons = {}
   o.pressed_buttons_scale = {}
+  o.choosing_division = false
   o.selected_trig=nil
   o.effect_id_selected=0
   o.effect_stored = {}
@@ -449,14 +450,14 @@ function Drummy:emit_note(division)
 			local probability = calculate_lfo(prob[1],prob[2],prob[3],prob[4],lfolfo[1])
 			if not self.pattern[self.current_pattern].track[i].muted and math.random() < probability then 
 				-- emit 
-				d:play_trig(i,trig.effect,self.pattern[self.current_pattern].track[i].choke)
+				d:play_trig(self.pattern[self.current_pattern].track[i].choke,trig.effect)
 			end
 		end 
 		::continue::
 	end
 end
 
-function Drummy:play_trig(i,effect,choke)
+function Drummy:play_trig(i,effect)
 	self.track_playing[i]=true
 	local volume = get_effect(effect,"volume")
 	local rate = get_effect(effect,"rate")
@@ -494,8 +495,7 @@ function Drummy:play_trig(i,effect,choke)
 		sample_start[1],sample_start[2],sample_start[3],sample_start[4],
 		sample_end[1],sample_end[2],sample_end[3],sample_end[4],
 		retrig[1],
-		lfolfo[1],
-		choke)
+		lfolfo[1])
 end
 
 -- returns the visualization of the matrix
@@ -650,13 +650,26 @@ function Drummy:get_visual()
 		self.visual[6][15] = 14 
 	end
 
-	-- undo/redo
-	if #self.undo_trig > 0 then 
-		self.visual[8][16] = 14
+	-- show division
+	self.visual[7][16] = self.pattern[self.current_pattern].track[self.track_current].division - 1
+	if self.choosing_division then 
+		self.visual[7][16] = self.blinky[2]*self.visual[7][16] 
+		-- show scale bar for division
+		for i=1,16 do
+			self.visual[5][i]=i-1
+			if i==self.pattern[self.current_pattern].track[self.track_current].division then 
+				self.visual[5][i]=15*self.blinky[2]
+			end
+		end
 	end
-	if #self.redo_trig > 0 then 
-		self.visual[7][16] = 14
-	end
+
+	-- -- undo/redo
+	-- if #self.undo_trig > 0 then 
+	-- 	self.visual[8][16] = 14
+	-- end
+	-- if #self.redo_trig > 0 then 
+	-- 	self.visual[7][16] = 14
+	-- end
 
 	-- illuminate currently playing trig on currently selected track
 	if not self.demo_mode and self.is_playing and self.pattern[self.current_pattern].track[self.track_current].pos[2] > 0 then 
@@ -738,6 +751,10 @@ function Drummy:key_press(row,col,on)
 	if row == 5 and col == 1 and self.effect_id_selected>0 and on then 
 		self.pressed_lfo = not self.pressed_lfo
 		if self.pressed_lfo then self.show_graphic = {"lfo",2} end
+	elseif row == 5 and self.choosing_division then 
+		if on then 
+			self:update_division(col)
+		end
 	elseif row == 5 and col > 1 and self.effect_id_selected>0  then 
 		if self.pressed_lfo then 
 			self:update_lfo(col-1,on)
@@ -751,6 +768,8 @@ function Drummy:key_press(row,col,on)
 		self:press_effect(col-1)
 	elseif row == 8 and col == 16 and on then 
 		self:toggle_demo()
+	elseif row == 7 and col == 16 and on then 
+		self:choose_division()
 	elseif row == 6 and col == 15 and on then 
 		self:paste_effect_to_track()
 	elseif row == 6 and col == 16 and on then 
@@ -784,6 +803,13 @@ function Drummy:key_press(row,col,on)
 	end
 end
 
+function Drummy:update_division(division)
+	self.pattern[self.current_pattern].track[self.track_current].division = division
+end
+
+function Drummy:choose_division()
+	self.choosing_division = not self.choosing_division
+end
 
 function Drummy:copy_effect()
 	if self.selected_trig ~= nil then 
@@ -963,7 +989,7 @@ function Drummy:press_demo_file(row,col)
 				end
 				self.track_files_available[self.track_current][i].loaded = true
 			else
-				self:play_trig(self.track_current,self.effect_stored,self.pattern[self.current_pattern].track[self.track_current].choke)
+				self:play_trig(self.pattern[self.current_pattern].track[self.track_current].choke,self.effect_stored)
 			end
 			break
 		end
@@ -992,7 +1018,7 @@ function Drummy:press_track(track)
 	self.track_current = track 
 	self.selected_trig = nil
 	if not self.is_playing then 
-		self:play_trig(track,self.effect_stored,self.pattern[self.current_pattern].track[track].choke)
+		self:play_trig(self.pattern[self.current_pattern].track[track].choke,self.effect_stored)
 	end
 end
 
