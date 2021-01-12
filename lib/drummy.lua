@@ -589,7 +589,7 @@ function Drummy:get_visual()
 				self.visual[d.row][d.col] = 14 
 			end
 		end
-		self.visual[6][14] = 15 *self.blinky[3]
+		self.visual[8][16] = 15 *self.blinky[3]
 	elseif self.pressed_buttons_bar then
 		-- illuminate the available area for trigs
 		for row=1,self.pattern[self.current_pattern].track[self.track_current].pos_max[1] do 
@@ -691,15 +691,15 @@ function Drummy:get_visual()
 	-- draw buttons
 	if self.is_playing then 
 		self.visual[8][1] = 15 -- play button
-		self.visual[6][1] = 4  -- stop button
+		self.visual[7][1] = 4  -- stop button
 	else
 		self.visual[8][1] = 4
-		self.visual[6][1] = 15 
+		self.visual[7][1] = 15 
 	end
 	if self.is_recording then 
-		self.visual[7][1] = 15 -- rec button
+		self.visual[6][1] = 15 -- rec button
 	else
-		self.visual[7][1] = 4
+		self.visual[6][1] = 4
 	end
 
 	-- illuminate currently pressed button
@@ -734,7 +734,7 @@ function Drummy:key_press(row,col,on)
 		self.pressed_buttons_bar = on 
 	elseif row == 6 and col >= 2 and col <= 13 and on then 
 		self:press_effect(col-1)
-	elseif row == 6 and col == 14 and on then 
+	elseif row == 8 and col == 16 and on then 
 		self:toggle_demo()
 	elseif row == 6 and col == 15 and on then 
 		self:paste_effect_to_track()
@@ -746,9 +746,9 @@ function Drummy:key_press(row,col,on)
 		self:press_demo_file(row,col)
 	elseif row >= 1 and row <= 4 and not self.pressed_buttons_bar and on then 
 		self:press_trig(row,col)
-	elseif row==7 and col==1 and on then 
-		self:press_rec()
 	elseif row==6 and col==1 and on then 
+		self:press_rec()
+	elseif row==7 and col==1 and on then 
 		self:press_stop()
 	elseif row==8 and col==1 and on then 
 		self:press_play()
@@ -762,10 +762,10 @@ function Drummy:key_press(row,col,on)
 		self:press_chain_pattern(col-7)
 	elseif row==7 and col >= 8 and col <= 15 and on then 
 		self:press_chain_pattern(col-7)
-	elseif row==7 and col==16 and on then 
-		self:redo()
-	elseif row==8 and col==16 and on then 
-		self:undo()
+	-- elseif row==7 and col==16 and on then 
+	-- 	self:redo()
+	-- elseif row==8 and col==16 and on then 
+	-- 	self:undo()
 	end
 end
 
