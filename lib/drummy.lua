@@ -206,6 +206,7 @@ function Drummy:new(args)
 	  		trig={},
 	  		longest_track=j==1,
 	  		filename="",
+	  		choke=j, -- choke group
 	  	}
 	  	-- fill in default trigs
 	  	for row=1,4 do 
@@ -441,7 +442,7 @@ function Drummy:sixteenth_note(t)
 				local probability = calculate_lfo(prob[1],prob[2],prob[3],prob[4],lfolfo[1])
 				if not self.pattern[self.current_pattern].track[i].muted and math.random() < probability then 
 					-- emit 
-					d:play_trig(i,trig.effect)
+					d:play_trig(i,trig.effect,self.pattern[self.current_pattern].track[i].choke)
 				end
 			end
 		end
@@ -449,7 +450,7 @@ function Drummy:sixteenth_note(t)
 	-- print("sixteenth_note ",t) 
 end
 
-function Drummy:play_trig(i,effect)
+function Drummy:play_trig(i,effect,choke)
 	self.track_playing[i]=true
 	local volume = get_effect(effect,"volume")
 	local rate = get_effect(effect,"rate")
@@ -487,7 +488,8 @@ function Drummy:play_trig(i,effect)
 		sample_start[1],sample_start[2],sample_start[3],sample_start[4],
 		sample_end[1],sample_end[2],sample_end[3],sample_end[4],
 		retrig[1],
-		lfolfo[1])
+		lfolfo[1],
+		choke)
 end
 
 -- returns the visualization of the matrix
@@ -672,6 +674,13 @@ function Drummy:get_visual()
 		if i==self.track_current then 
 			self.visual[8][i+1] = self.visual[8][i+1] *self.blinky[6] 
 		end
+		if self.pressed_buttons["8,"..i+1] ~= nil then -- show choke group when trigger is pressed
+			-- turn off mutes
+			for j=1,6 do 
+				self.visual[7][j+1]=0
+			end
+			self.visual[7][track.choke+1] = 15
+		end
 	end
 
 	-- illuminate patterns (active and not active)
@@ -755,7 +764,7 @@ function Drummy:key_press(row,col,on)
 	elseif row==8 and col >= 2 and col <= 7 and on then 
 		self:press_track(col-1)
 	elseif row==7 and col >= 2 and col <= 7 and on then 
-		self:press_mute(col-1)
+		self:press_mute_choke(col-1)
 	elseif row==8 and col >= 8 and col <= 15 and on then 
 		self:press_pattern(col-7)
 	elseif row==7 and col >= 8 and col <= 15 and on then 
@@ -948,7 +957,7 @@ function Drummy:press_demo_file(row,col)
 				end
 				self.track_files_available[self.track_current][i].loaded = true
 			else
-				self:play_trig(self.track_current,self.effect_stored)
+				self:play_trig(self.track_current,self.effect_stored,self.pattern[self.current_pattern].track[self.track_current].choke)
 			end
 			break
 		end
@@ -977,12 +986,24 @@ function Drummy:press_track(track)
 	self.track_current = track 
 	self.selected_trig = nil
 	if not self.is_playing then 
-		self:play_trig(track,self.effect_stored)
+		self:play_trig(track,self.effect_stored,self.pattern[self.current_pattern].track[track].choke)
 	end
 end
 
-function Drummy:press_mute(track)
+function Drummy:press_mute_choke(track)
+	-- if track butotn is pressed, set the choke
+	track_pressed = 0 
+	for i=1,6 do 
+		if self.pressed_buttons["8,"..i+1] ~= nil then 
+			track_pressed = i 
+		end
+	end
+	if track_pressed == 0 then 
+		-- otherwise mute
 		self.pattern[self.current_pattern].track[track].muted = not self.pattern[self.current_pattern].track[track].muted 
+	else
+		self.pattern[self.current_pattern].track[track_pressed].choke = track
+	end
 end
 
 function Drummy:press_rec()

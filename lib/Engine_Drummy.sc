@@ -17,7 +17,7 @@ Engine_Drummy : CroneEngine {
 		});
 
 		(0..5).do({arg i; 
-			SynthDef("player"++i,{ arg t_trig=0, lfolfo=0.0, currentTime=0.0, 
+			SynthDef("player"++i,{ arg bufnum=0, t_trig=0, lfolfo=0.0, currentTime=0.0, 
 				ampMin=0.0, ampMax=0.0, ampLFOMin=0.0, ampLFOMax=0.0, 
 				rateMin=1.0, rateMax=1.0, rateLFOMin=0.0, rateLFOMax=0.0,
 				panMin=0.0, panMax=0.0, panLFOMin=0.0, panLFOMax=0.0,
@@ -64,20 +64,20 @@ Engine_Drummy : CroneEngine {
 					(currentTime*2*pi*sampleEndLFOMin).mod(2*pi),mul:(sampleEndMax-sampleEndMin)/2,add:(sampleEndMax+sampleEndMin)/2
 				);
 				
-				bufsnd = BufRd.ar(2,sampleBuff[i],
+				bufsnd = BufRd.ar(2,sampleBuff[bufnum],
 					Phasor.ar(
 						trig:t_trig,
-						rate:BufRateScale.kr(sampleBuff[i])*rate,
-						start:sampleStart*BufFrames.kr(sampleBuff[i]),
-						end:sampleEnd*BufFrames.kr(sampleBuff[i]),
-						resetPos:sampleStart*BufFrames.kr(sampleBuff[i])
+						rate:BufRateScale.kr(sampleBuff[bufnum])*rate,
+						start:sampleStart*BufFrames.kr(sampleBuff[bufnum]),
+						end:sampleEnd*BufFrames.kr(sampleBuff[bufnum]),
+						resetPos:sampleStart*BufFrames.kr(sampleBuff[bufnum])
 					)
 					loop:1,
 					interpolation:2
 				);
-				// bufsnd = PlayBuf.ar(2, sampleBuff[i],
-				// 	rate:rate*BufRateScale.kr(sampleBuff[i]),
-				// 	startPos:sampleStart*BufFrames.kr(sampleBuff[i]),
+				// bufsnd = PlayBuf.ar(2, sampleBuff[bufnum],
+				// 	rate:rate*BufRateScale.kr(sampleBuff[bufnum]),
+				// 	startPos:sampleStart*BufFrames.kr(sampleBuff[bufnum]),
 				// 	loop:retrig, // if > 0 then it loops, getting stopped by the envelope
 				// 	trigger:t_trig);
 	        	bufsnd = MoogFF.ar(bufsnd,lpf,resonance);
@@ -86,12 +86,12 @@ Engine_Drummy : CroneEngine {
 					Pan2.ar(bufsnd[0],-1+(2*pan),amp),
 					Pan2.ar(bufsnd[1],1+(2*pan),amp),
 				]);
-				Out.ar(0,snd*EnvGen.ar(Env([0,1, 1, 0], [0.005,(sampleEnd-sampleStart)/(rate.abs)*(retrig+1)*BufDur.kr(sampleBuff[i]),0.005]),gate:t_gate))
+				Out.ar(0,snd*EnvGen.ar(Env([0,1, 1, 0], [0.005,(sampleEnd-sampleStart)/(rate.abs)*(retrig+1)*BufDur.kr(sampleBuff[bufnum]),0.005]),gate:t_gate))
 			}).add;	
 		});
 
 		samplerPlayer = Array.fill(6,{arg i;
-			Synth("player"++i,[\bufnum:sampleBuff[i]], target:context.xg);
+			Synth("player"++i,[\bufnum:sampleBuff[bufnum]], target:context.xg);
 		});
 
 		this.addCommand("samplefile","is", { arg msg;
@@ -100,7 +100,7 @@ Engine_Drummy : CroneEngine {
 			sampleBuff[msg[1]-1] = Buffer.read(context.server,msg[2]);
 		});
 
-		this.addCommand("play","ifffffffffffffffffffffffffffffffffff", { arg msg;
+		this.addCommand("play","ifffffffffffffffffffffffffffffffffffi", { arg msg;
 			// lua is sending 1-index
 			samplerPlayer[msg[1]-1].set(
 				\t_trig,1,
@@ -115,6 +115,7 @@ Engine_Drummy : CroneEngine {
 				\sampleEndMin,msg[31],\sampleEndMax,msg[32],\sampleEndLFOMin,msg[33],\sampleEndLFOMax,msg[34],
 				\retrig,msg[35],
 				\lfolfo,msg[36],
+				\bufnum,msg[37],
 				\t_gate,1
 			);
 		});
@@ -122,7 +123,7 @@ Engine_Drummy : CroneEngine {
 	}
 
 	free {
-		(0..5).do({arg i; sampleBuff[i].free});
+		(0..5).do({arg i; sampleBuff[bufnum].free});
 		(0..5).do({arg i; samplerPlayer[i].free});
 	}
 }
