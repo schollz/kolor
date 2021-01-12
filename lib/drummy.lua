@@ -207,6 +207,7 @@ function Drummy:new(args)
 	  		longest_track=j==1,
 	  		filename="",
 	  		choke=j, -- choke group
+	  		division=16, -- which clock division (1-16)
 	  	}
 	  	-- fill in default trigs
 	  	for row=1,4 do 
@@ -235,12 +236,15 @@ function Drummy:new(args)
   o.lattice = lattice:new({
   	ppqn=8
   })
-  o.sixteenth_note_pattern = o.lattice:new_pattern{
-  	action=function(t)
-			o:sixteenth_note(t)
-  	end,
-  	division=1/16
-  }
+  o.timers = {}
+  for division=1,16 do
+	  o.timers[division] = o.lattice:new_pattern{
+	  	action=function(t)
+				o:emit_note(division)
+	  	end,
+	  	division=1/division
+	  }
+	end
   o.bottom_beat = true
   o.thirtysecond_note_pattern = o.lattice:new_pattern{
   	action=function(t)
@@ -405,49 +409,51 @@ function Drummy:thirtysecond_note(t)
 	end
 end
 
--- sixteenth note is played
-function Drummy:sixteenth_note(t)
+-- emit a note note is played
+function Drummy:emit_note(division)
 	self.beat_current = t 
-	if self.is_playing then 
-		-- print(t)
-		-- print(self.beat_current-self.beat_started)
-		for i,_ in ipairs(self.pattern[self.current_pattern].track) do 
-			self.track_playing[i] = false 
-			self.pattern[self.current_pattern].track[i].pos[2] = self.pattern[self.current_pattern].track[i].pos[2] + 1
-			if self.pattern[self.current_pattern].track[i].pos[2] > self.pattern[self.current_pattern].track[i].pos_max[2] then 
-				self.pattern[self.current_pattern].track[i].pos[2] = 1
-				self.pattern[self.current_pattern].track[i].pos[1] = self.pattern[self.current_pattern].track[i].pos[1] + 1
-			end
-			if self.pattern[self.current_pattern].track[i].pos[1] > self.pattern[self.current_pattern].track[i].pos_max[1] then 
-				self.pattern[self.current_pattern].track[i].pos[1] = 1
-				if self.pattern[self.current_pattern].track[i].longest_track then
-					-- starting over! note: longest track determines when queue next
-					self.current_pattern = self.pattern[self.current_pattern].next_pattern_queued
-					for j, _ in ipairs(self.pattern[self.current_pattern].track) do 
-						self.pattern[self.current_pattern].track[j].pos[1] = 1
-						self.pattern[self.current_pattern].track[j].pos[2] = 1
-					end
-					-- TODO: use markov chains here to determine next queued pattern
+	if not self.is_playing then 
+		do return end 
+	end
+	-- print(t)
+	-- print(self.beat_current-self.beat_started)
+	for i,t in ipairs(self.pattern[self.current_pattern].track) do 
+		if t.division ~= division then goto continue end
+		self.track_playing[i] = false 
+		self.pattern[self.current_pattern].track[i].pos[2] = self.pattern[self.current_pattern].track[i].pos[2] + 1
+		if self.pattern[self.current_pattern].track[i].pos[2] > self.pattern[self.current_pattern].track[i].pos_max[2] then 
+			self.pattern[self.current_pattern].track[i].pos[2] = 1
+			self.pattern[self.current_pattern].track[i].pos[1] = self.pattern[self.current_pattern].track[i].pos[1] + 1
+		end
+		if self.pattern[self.current_pattern].track[i].pos[1] > self.pattern[self.current_pattern].track[i].pos_max[1] then 
+			self.pattern[self.current_pattern].track[i].pos[1] = 1
+			if self.pattern[self.current_pattern].track[i].longest_track then
+				-- starting over! note: longest track determines when queue next
+				self.current_pattern = self.pattern[self.current_pattern].next_pattern_queued
+				for j, _ in ipairs(self.pattern[self.current_pattern].track) do 
+					self.pattern[self.current_pattern].track[j].pos[1] = 1
+					self.pattern[self.current_pattern].track[j].pos[2] = 1
 				end
-			end
-			trig = self.pattern[self.current_pattern].track[i].trig[self.pattern[self.current_pattern].track[i].pos[1]][self.pattern[self.current_pattern].track[i].pos[2]]
-			if trig.active then 
-				if self.is_recording and self.effect_id_selected > 0 and i==self.track_current then 
-					-- copy current selected effect to the current trig on currently selected track
-					local e = self.effect_stored[effect_order[self.effect_id_selected]]
-					self.pattern[self.current_pattern].track[i].trig[self.pattern[self.current_pattern].track[i].pos[1]][self.pattern[self.current_pattern].track[i].pos[2]].effect[effect_order[self.effect_id_selected]] = {value=e.value,lfo=e.lfo}
-				end
-				local prob = get_effect(trig.effect,"probability")
-				local lfolfo = get_effect(trig.effect,"lfolfo")
-				local probability = calculate_lfo(prob[1],prob[2],prob[3],prob[4],lfolfo[1])
-				if not self.pattern[self.current_pattern].track[i].muted and math.random() < probability then 
-					-- emit 
-					d:play_trig(i,trig.effect,self.pattern[self.current_pattern].track[i].choke)
-				end
+				-- TODO: use markov chains here to determine next queued pattern
 			end
 		end
+		trig = self.pattern[self.current_pattern].track[i].trig[self.pattern[self.current_pattern].track[i].pos[1]][self.pattern[self.current_pattern].track[i].pos[2]]
+		if trig.active then 
+			if self.is_recording and self.effect_id_selected > 0 and i==self.track_current then 
+				-- copy current selected effect to the current trig on currently selected track
+				local e = self.effect_stored[effect_order[self.effect_id_selected]]
+				self.pattern[self.current_pattern].track[i].trig[self.pattern[self.current_pattern].track[i].pos[1]][self.pattern[self.current_pattern].track[i].pos[2]].effect[effect_order[self.effect_id_selected]] = {value=e.value,lfo=e.lfo}
+			end
+			local prob = get_effect(trig.effect,"probability")
+			local lfolfo = get_effect(trig.effect,"lfolfo")
+			local probability = calculate_lfo(prob[1],prob[2],prob[3],prob[4],lfolfo[1])
+			if not self.pattern[self.current_pattern].track[i].muted and math.random() < probability then 
+				-- emit 
+				d:play_trig(i,trig.effect,self.pattern[self.current_pattern].track[i].choke)
+			end
+		end 
+		::continue::
 	end
-	-- print("sixteenth_note ",t) 
 end
 
 function Drummy:play_trig(i,effect,choke)
