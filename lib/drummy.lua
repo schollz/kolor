@@ -1,9 +1,9 @@
 lattice = include("lib/lattice")
 graphic_pixels = include("lib/pixels")
 json = include("lib/json")
-local Drummy = {}
+local Kolor = {}
 
-engine.name="Drummy"
+engine.name="Kolor"
 
 
 
@@ -126,15 +126,15 @@ local function get_effect(effect,effectname)
 	return {minval, maxval, minfreq, maxfreq}
 end
 
---- instantiate a new drummy
+--- instantiate a new kolor
 -- @tparam[opt] table args optional named attributes are:
 -- - "auto" (boolean) turn off "auto" pulses from the norns clock, defaults to true
 -- - "meter" (number) of quarter notes per measure, defaults to 4
 -- - "ppqn" (number) the number of pulses per quarter note of this superclock, defaults to 96
 -- @treturn table a new lattice
-function Drummy:new(args)
+function Kolor:new(args)
 	-- setup object
-  local o = setmetatable({}, { __index = Drummy })
+  local o = setmetatable({}, { __index = Kolor })
   local args = args == nil and {} or args
 
   o.meter = args.meter == nil and 4 or args.meter
@@ -295,7 +295,7 @@ function Drummy:new(args)
   -- setup the parameter window
 	params:add_group("DRUMMY",3)
   params:add_text('save_name_d',"save as...","")
-  local name_folder=_path.data.."drummy/"
+  local name_folder=_path.data.."kolor/"
   params:set_action("save_name_d",function(y)
     -- prevent banging
     local x=y
@@ -331,7 +331,7 @@ function Drummy:new(args)
   return o
 end
 
-function Drummy:save(filename)
+function Kolor:save(filename)
 	print("saving to "..filename)
 	local data = json.encode({
 		pattern=self.pattern,
@@ -344,7 +344,7 @@ function Drummy:save(filename)
 	io.close(file)
 end
 
-function Drummy:load(filename)
+function Kolor:load(filename)
 	self.show_graphic = {"load",3000000}
 	print("opening "..filename)
   local f=io.open(filename,"rb")
@@ -362,12 +362,12 @@ function Drummy:load(filename)
 	self.show_graphic = {"load",1}
 end
 
-function Drummy:grid_key(x,y,z)
+function Kolor:grid_key(x,y,z)
 	self:key_press(x,y,z==1)
 	self:grid_redraw()
 end
 
-function Drummy:grid_redraw()
+function Kolor:grid_redraw()
 	  self.g:all(0)
 		local gd = self:get_visual()
 	  rows = #gd 
@@ -382,7 +382,7 @@ function Drummy:grid_redraw()
 	  self.g:refresh()
 end
 
-function Drummy:debounce()
+function Kolor:debounce()
 	self.blink_count = self.blink_count + 1
 	if self.blink_count > 1000 then 
 		self.blink_count = 0
@@ -403,7 +403,7 @@ function Drummy:debounce()
 	end
 end
 
-function Drummy:thirtysecond_note(t)
+function Kolor:thirtysecond_note(t)
 	if self.is_playing then 
 		self.bottom_beat = not self.bottom_beat
 		-- print(self.bottom_beat)
@@ -411,7 +411,7 @@ function Drummy:thirtysecond_note(t)
 end
 
 -- emit a note note is played
-function Drummy:emit_note(division)
+function Kolor:emit_note(division)
 	self.beat_current = t 
 	if not self.is_playing then 
 		do return end 
@@ -457,7 +457,7 @@ function Drummy:emit_note(division)
 	end
 end
 
-function Drummy:play_trig(i,effect,choke)
+function Kolor:play_trig(i,effect,choke)
 	self.track_playing[i]=true
 	local volume = get_effect(effect,"volume")
 	local rate = get_effect(effect,"rate")
@@ -499,7 +499,7 @@ function Drummy:play_trig(i,effect,choke)
 end
 
 -- returns the visualization of the matrix
-function Drummy:get_visual()
+function Kolor:get_visual()
 	local current_pos = self.pattern[self.current_pattern].track[self.track_current].pos
 	local trig_selected = nil  
 	if self.selected_trig ~= nil then 
@@ -741,7 +741,7 @@ function Drummy:get_visual()
 end
 
 -- update the state depending on what was pressed
-function Drummy:key_press(row,col,on)
+function Kolor:key_press(row,col,on)
 	-- print("key_press",row,col,on)
 	if on then 
 		self.pressed_buttons[row..","..col]=true
@@ -805,18 +805,18 @@ function Drummy:key_press(row,col,on)
 	end
 end
 
-function Drummy:update_division(division)
+function Kolor:update_division(division)
 	self.pattern[self.current_pattern].track[self.track_current].division = division
 end
 
-function Drummy:choose_division()
+function Kolor:choose_division()
 	self.choosing_division = not self.choosing_division
 	if self.choosing_division then 
 		self.show_graphic = {"clock",3}
 	end
 end
 
-function Drummy:copy_effect()
+function Kolor:copy_effect()
 	if self.selected_trig ~= nil then 
 		-- copy the effects of the current to the cache
 		if self.effect_id_selected > 0 then 
@@ -836,7 +836,7 @@ function Drummy:copy_effect()
 	end
 end
 
-function Drummy:paste_effect_to_track()
+function Kolor:paste_effect_to_track()
 	if self.effect_id_selected == 0 then
 		print("no effect selected")
 		do return end 
@@ -852,7 +852,7 @@ function Drummy:paste_effect_to_track()
 end
 
 
-function Drummy:update_posmax(row,col)
+function Kolor:update_posmax(row,col)
 	self.pattern[self.current_pattern].track[self.track_current].pos_max = {row,col}
 	-- find new longest track 
 	longest_track = 1 
@@ -868,14 +868,14 @@ function Drummy:update_posmax(row,col)
 	self.pattern[self.current_pattern].track[longest_track].longest_track = true
 end
 
-function Drummy:press_chain_pattern(pattern_id)
+function Kolor:press_chain_pattern(pattern_id)
 	self.pattern[self.current_pattern].next_pattern[pattern_id] = self.pattern[self.current_pattern].next_pattern[pattern_id] + 1 
 	if self.pattern[self.current_pattern].next_pattern[pattern_id] > 3 then 
 		self.pattern[self.current_pattern].next_pattern[pattern_id] = 0 
 	end
 end
 
-function Drummy:press_pattern(pattern_id)
+function Kolor:press_pattern(pattern_id)
 	self:deselect()
 	if self.is_playing then 
 		self.pattern[self.current_pattern].next_pattern_queued = pattern_id
@@ -884,13 +884,13 @@ function Drummy:press_pattern(pattern_id)
 	end
 end
 
-function Drummy:deselect()
+function Kolor:deselect()
 	if self.selected_trig ~= nil then 
 		self.selected_trig = nil
 	end
 end
 
-function Drummy:update_effect(scale_id,on)
+function Kolor:update_effect(scale_id,on)
 	print("update_effect")
 	-- scale_id is between 1 and 15 
 
@@ -930,7 +930,7 @@ function Drummy:update_effect(scale_id,on)
 end
 
 
-function Drummy:update_lfo(scale_id,on)
+function Kolor:update_lfo(scale_id,on)
 	print("update_lfo")
 	-- scale_id is between 1 and 15 
 
@@ -969,7 +969,7 @@ function Drummy:update_lfo(scale_id,on)
 	end
 end
 
-function Drummy:press_effect(effect_id)
+function Kolor:press_effect(effect_id)
 	print("press_effect "..effect_id)
 	self.pressed_lfo = false
 	self.pressed_buttons_scale = {} -- reset scale
@@ -981,7 +981,7 @@ function Drummy:press_effect(effect_id)
 	self.show_graphic = {effect_order[effect_id],2}
 end
 
-function Drummy:press_demo_file(row,col)
+function Kolor:press_demo_file(row,col)
 	print("press_demo_file "..row.." "..col)
 	for i, d in ipairs(self.track_files_available[self.track_current]) do 
 		if d.row == row and d.col == col then 
@@ -1000,7 +1000,7 @@ function Drummy:press_demo_file(row,col)
 	end
 end
 
-function Drummy:toggle_demo()
+function Kolor:toggle_demo()
 	-- demo track!
 	print("demo mode")
 	self.demo_mode = not self.demo_mode
@@ -1016,14 +1016,14 @@ function Drummy:toggle_demo()
 	end
 end
 
-function Drummy:press_track(track)
+function Kolor:press_track(track)
 	print("press_track")
 	self:deselect()
 	self.track_current = track 
 	self:play_trig(track,self.effect_stored,self.pattern[self.current_pattern].track[track].choke)
 end
 
-function Drummy:press_mute_choke(track)
+function Kolor:press_mute_choke(track)
 	-- if track butotn is pressed, set the choke
 	track_pressed = 0 
 	for i=1,6 do 
@@ -1039,17 +1039,17 @@ function Drummy:press_mute_choke(track)
 	end
 end
 
-function Drummy:press_rec()
+function Kolor:press_rec()
 	print("press_rec")
 	self.is_recording = not self.is_recording
 end
 
-function Drummy:press_stop()
+function Kolor:press_stop()
 	print("press_stop")
 	self.is_playing = false 
 end
 
-function Drummy:press_play()
+function Kolor:press_play()
 	print("press_play")
 	if not self.is_playing then 
 		self.is_playing = true
@@ -1063,7 +1063,7 @@ function Drummy:press_play()
 end
 
 
-function Drummy:press_trig(row,col)
+function Kolor:press_trig(row,col)
 	-- print("press_trig",row,col,on)
 	if row > self.pattern[self.current_pattern].track[self.track_current].pos_max[1] then 
 		do return end 
@@ -1091,7 +1091,7 @@ function Drummy:press_trig(row,col)
 end
 
 
-function Drummy:undo()
+function Kolor:undo()
 	-- insert into redo's and load undo
 	if #self.undo_trig > 0 then 
 		print("undoing")
@@ -1104,7 +1104,7 @@ function Drummy:undo()
 end
 
 
-function Drummy:add_undo(pattern_id,track_id,row,col)
+function Kolor:add_undo(pattern_id,track_id,row,col)
 	print("add_undo")
 	table.insert(self.undo_trig,{pattern_id,track_id,row,col,json.encode(self.pattern[pattern_id].track[track_id].trig[row][col])})
 	if #self.undo_trig > 100 then 
@@ -1113,7 +1113,7 @@ function Drummy:add_undo(pattern_id,track_id,row,col)
 	end
 end
 
-function Drummy:redo()
+function Kolor:redo()
 	-- insert into undo's
 	if #self.redo_trig > 0 then 
 		print("redoing")
@@ -1125,4 +1125,4 @@ function Drummy:redo()
 	end
 end
 
-return Drummy
+return Kolor

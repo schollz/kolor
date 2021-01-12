@@ -1,7 +1,7 @@
-// Engine_Drummy
+// Engine_Kolor
 
 // Inherit methods from CroneEngine
-Engine_Drummy : CroneEngine {
+Engine_Kolor : CroneEngine {
 
 	var sampleBuff;
 	var samplerPlayer;
@@ -13,7 +13,7 @@ Engine_Drummy : CroneEngine {
 	alloc {
 
 		sampleBuff = Array.fill(6, { arg i; 
-			Buffer.read(context.server, "/home/we/dust/code/drummy/samples/shaker1.wav"); 
+			Buffer.read(context.server, "/home/we/dust/code/kolor/samples/shaker1.wav"); 
 		});
 
 		(0..5).do({arg i; 

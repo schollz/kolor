@@ -1,12 +1,12 @@
 -- d
 
-drummy = include("lib/drummy")
+kolor = include("lib/kolor")
 d = nil 
 position={1,1}
 press_positions={{0,0},{0,0}}
 
 function init()
-  d = drummy:new()
+  d = kolor:new()
   
   pattern=1
   patterns = {
