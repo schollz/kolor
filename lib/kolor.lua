@@ -154,7 +154,14 @@ end
 function Kolor:new(args)
   -- setup sample folders
   for i=1,6 do 
-	os.execute("mkdir -p ".._path.audio.."kolor/bank"..i)
+		os.execute("mkdir -p ".._path.audio.."kolor/bank"..i)
+  end
+  -- copy all the samples over 
+  if not util.file_exists(_path.audio.."kolor/silence.wav") then 
+  	os.execute("cp ".._path.code.."kolor/samples/silence.wav ".._path.audio.."kolor/silence.wav")
+  	for i=1,6 do 
+	  	os.execute("cp ".._path.code.."kolor/samples/bank"..i.." ".._path.audio.."kolor/")
+  	end
   end
 
   -- setup object
@@ -192,7 +199,7 @@ function Kolor:new(args)
   o.demo_mode = false
   o.track_files_available = {}
   for i=1,6 do 
-		local filelist = list_files("/home/we/dust/audio/samples/bank"..i,{},true)
+		local filelist = list_files(__path.audio.."kolor/bank"..i,{},true)
 		o.track_files_available[i] = {}
 		local row = 1 
 		local col = 1 
