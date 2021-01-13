@@ -151,17 +151,17 @@ local function get_effect(effect,effectname)
 end
 
 --- instantiate a new kolor
--- @tparam[opt] table args optional named attributes are:
--- - "auto" (boolean) turn off "auto" pulses from the norns clock, defaults to true
--- - "meter" (number) of quarter notes per measure, defaults to 4
--- - "ppqn" (number) the number of pulses per quarter note of this superclock, defaults to 96
--- @treturn table a new lattice
 function Kolor:new(args)
-	-- setup object
+  -- setup sample folders
+  for i=1,6 do 
+	os.execute("mkdir -p ".._path.audio.."kolor/bank"..i)
+  end
+
+  -- setup object
   local o = setmetatable({}, { __index = Kolor })
   local args = args == nil and {} or args
-
-  o.meter = args.meter == nil and 4 or args.meter
+  
+  -- setup state
   o.is_playing = false 
   o.is_recording = false
   o.pressed_trig_area = false 

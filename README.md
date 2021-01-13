@@ -12,6 +12,15 @@ this script is born out an exploration of sampler sequencers. i drew inspiration
 
 at the end i was able to only compromise on a few things.
 
+### add to your favorite script
+
+as long as your norns script does not use the grid, you can add *kolor* to it. just edit the script file and add these two lines:
+
+```lua
+kolor = include("lib/kolor")
+kolor:new()
+```
+
 ## license
 
 mit
