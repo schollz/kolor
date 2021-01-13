@@ -13,7 +13,7 @@ Engine_Kolor : CroneEngine {
 	alloc {
 
 		sampleBuff = Array.fill(6, { arg i; 
-			Buffer.read(context.server, "/home/we/dust/code/kolor/samples/shaker1.wav"); 
+			Buffer.read(context.server, "/home/we/dust/audio/samples/silence.wav"); 
 		});
 
 		(0..5).do({arg i; 
@@ -68,9 +68,9 @@ Engine_Kolor : CroneEngine {
 					Phasor.ar(
 						trig:t_trig,
 						rate:BufRateScale.kr(sampleBufnum)*rate,
-						start:(sampleStart*(rate>0)+sampleEnd*(rate<0))*BufFrames.kr(sampleBufnum),
-						end:(sampleEnd*(rate>0)+sampleStart*(rate<0))*BufFrames.kr(sampleBufnum),
-						resetPos:(sampleStart*(rate>0)+sampleEnd*(rate<0))*BufFrames.kr(sampleBufnum)
+						start:((sampleStart*(rate>0))+(sampleEnd*(rate<0)))*BufFrames.kr(sampleBufnum),
+						end:((sampleEnd*(rate>0))+(sampleStart*(rate<0)))*BufFrames.kr(sampleBufnum),
+						resetPos:((sampleStart*(rate>0))+(sampleEnd*(rate<0)))*BufFrames.kr(sampleBufnum)
 					)
 					loop:1,
 					interpolation:2

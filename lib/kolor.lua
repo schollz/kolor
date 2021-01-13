@@ -1,8 +1,8 @@
 lattice = include("lib/lattice")
 graphic_pixels = include("lib/pixels")
 json = include("lib/json")
-local Kolor = {}
 
+local Kolor = {}
 engine.name="Kolor"
 
 
@@ -62,6 +62,19 @@ local function random_float(lower, greater)
     return lower + math.random()  * (greater - lower);
 end
 
+local function average( t )
+  local sum = 0
+  local count= 0
+
+  for k,v in pairs(t) do
+    if type(v) == 'number' then
+      sum = sum + v
+      count = count + 1
+    end
+  end
+
+  return (sum / count)
+end
 
 local function lfo_freq(index)
 	if index==1 then 
@@ -470,10 +483,10 @@ function Kolor:play_trig(i,effect,choke)
 	local retrig = get_effect(effect,"retrig")
 	local lfolfo = get_effect(effect,"lfolfo")
 	lfolfo[1] = lfo_freq(lfolfo[1]) -- lfo's lfo
-	if rate[1] < 0 then 
-		sample_start[1] = 1 - sample_start[1]
-		sample_start[2] = 1 - sample_start[2]
-	end
+	-- if rate[1] < 0 then 
+	-- 	sample_start[1] = 1 - sample_start[1]
+	-- 	sample_start[2] = 1 - sample_start[2]
+	-- end
 	print(i,current_time(),
 		volume[1],volume[2],volume[3],volume[4],
 		rate[1],rate[2],rate[3],rate[4],
