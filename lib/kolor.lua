@@ -115,6 +115,17 @@ local function list_files(d,files,recursive)
   return files
 end
 
+local function wrap_position(rowcol,rowcolmax)
+	if rowcol[2] > rowcolmax[2] then 
+		rowcol[1] = rowcol[1] + 1
+		rowcol[2] = 1
+	end
+	if rowcol[1]> rowcolmax[1] then
+		rowcol[1] = 1
+	end
+	return rowcol
+end
+
 local function calculate_lfo(minval,maxval,minfreq,maxfreq,lfolfofreq)
 	local freq = (math.sin(current_time()*2*3.14159*lfolfofreq))*(maxfreq-minfreq)/2+(maxfreq+minfreq)/2
 	return (math.sin(current_time()*2*3.14159*freq))*(maxval-minval)/2+(maxval+minval)/2
@@ -244,28 +255,23 @@ function Kolor:new(args)
   end
   o.undo_trig = {} -- used for undo
   o.redo_trig = {} -- used for redo
+
+
   -- lattice 
-  o.beat_started = 0
-  o.beat_current = 0
+  -- for keeping time of all the divisions
   o.lattice = lattice:new({
   	ppqn=8
   })
   o.timers = {}
   for division=1,16 do
-	  o.timers[division] = o.lattice:new_pattern{
+  	o.timers[division] = {time_last_beat=0,time_next_beat=0}
+	  o.timers[division].lattice = o.lattice:new_pattern{
 	  	action=function(t)
 				o:emit_note(division)
 	  	end,
 	  	division=1/division
 	  }
 	end
-  o.bottom_beat = true
-  o.thirtysecond_note_pattern = o.lattice:new_pattern{
-  	action=function(t)
-			o:thirtysecond_note(t)
-  	end,
-  	division=1/32
-  }
   o.lattice:start()
 
   -- TODO: LOAD USER FILE HERE BEFORE LOADING TRACK FILES
@@ -421,22 +427,19 @@ function Kolor:debounce()
 	end
 end
 
-function Kolor:thirtysecond_note(t)
-	if self.is_playing then 
-		self.bottom_beat = not self.bottom_beat
-		-- print(self.bottom_beat)
-	end
-end
-
 -- emit a note note is played
 function Kolor:emit_note(division)
-	self.beat_current = t 
 	if not self.is_playing then 
 		do return end 
 	end
-	-- print(t)
-	-- print(self.beat_current-self.beat_started)
+	-- calculate the start and end of current and next
+	-- beat for use with quantization
+	self.timers[division].time_last_beat = current_time()
+	self.timers[division].time_next_beat = current_time() + (1/division)*clock.get_beat_sec()*4
+
+	-- check to see which tracks need to emit
 	for i,t in ipairs(self.pattern[self.current_pattern].track) do 
+		-- make sure this track is in the right division
 		if t.division ~= division then goto continue end
 		self.track_playing[i] = false 
 		self.pattern[self.current_pattern].track[i].pos[2] = self.pattern[self.current_pattern].track[i].pos[2] + 1
@@ -1038,9 +1041,28 @@ end
 
 function Kolor:press_track(track)
 	print("press_track")
-	self:deselect()
+	if not self.is_recording then 
+		self:deselect()
+	end
 	self.track_current = track 
 	self:play_trig(track,self.effect_stored,self.pattern[self.current_pattern].track[track].choke)
+	if self.is_playing and self.is_recording then 
+		-- add sample to track in quantized position
+		local t = current_time()
+		local division = self.pattern[self.current_pattern].track[track].division
+		local pos = self.pattern[self.current_pattern].track[track].pos
+		local next_pos = wrap_position({pos[1],pos[2]+1},self.pattern[self.current_pattern].track[track].pos_max)
+		tab.print(pos)
+		tab.print(next_pos)
+		if math.abs(t-self.timers[division].time_last_beat) > math.abs(t-self.timers[division].time_next_beat) then 
+			-- add to next position
+			pos = next_pos
+		end 
+		if not self.pattern[self.current_pattern].track[track].trig[pos[1]][pos[2]].active then
+			-- add it 
+			self:press_trig(pos[1],pos[2],true)
+		end
+	end
 end
 
 function Kolor:press_mute_choke(track)
@@ -1074,8 +1096,6 @@ function Kolor:press_play()
 	print("press_play")
 	if not self.is_playing then 
 		self.is_playing = true
-		self.bottom_beat = false -- initialize state
-		self.beat_started = self.beat_current
 		-- reset tracks
 		for i,_ in ipairs(self.pattern[self.current_pattern].track) do
 			self.pattern[self.current_pattern].track[i].pos = {1,0}
@@ -1084,7 +1104,7 @@ function Kolor:press_play()
 end
 
 
-function Kolor:press_trig(row,col)
+function Kolor:press_trig(row,col,noselect)
 	-- print("press_trig",row,col,on)
 	if row > self.pattern[self.current_pattern].track[self.track_current].pos_max[1] then 
 		do return end 
@@ -1108,7 +1128,9 @@ function Kolor:press_trig(row,col)
 		end
 	end
 	self.pattern[self.current_pattern].track[self.track_current].trig[row][col].active = true	
-	self.selected_trig = {row,col}
+	if noselect == nil or noselect == false then
+		self.selected_trig = {row,col}
+	end
 end
 
 
