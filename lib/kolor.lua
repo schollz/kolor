@@ -344,6 +344,13 @@ function Kolor:new(args)
   return o
 end
 
+function Kolor:show_text(text,time)
+	if time == nil then 
+		time = 3
+	end
+	self.show_graphic = {text,time}
+end
+
 function Kolor:save(filename)
 	print("saving to "..filename)
 	local data = json.encode({
@@ -358,7 +365,6 @@ function Kolor:save(filename)
 end
 
 function Kolor:load(filename)
-	self.show_graphic = {"load",3000000}
 	print("opening "..filename)
   local f=io.open(filename,"rb")
   local content=f:read("*all")
@@ -372,7 +378,6 @@ function Kolor:load(filename)
   for i=1,6 do 
   	engine.samplefile(i,self.track_files[i])
   end
-	self.show_graphic = {"load",1}
 end
 
 function Kolor:grid_key(x,y,z)
@@ -628,6 +633,9 @@ function Kolor:get_visual()
 						-- determine the current effect and display the effect it
 						if self.effect_id_selected > 0 and self.pattern[self.current_pattern].track[self.track_current].trig[row][col].effect[effect_order[self.effect_id_selected]] ~= nil then 
 							self.visual[row][col] = self.pattern[self.current_pattern].track[self.track_current].trig[row][col].effect[effect_order[self.effect_id_selected]].value[1]
+							if self.visual[row][col] < 3 then 
+								self.visual[row][col] = 3 
+							end
 						else
 							self.visual[row][col] = 7 
 						end
@@ -764,7 +772,8 @@ function Kolor:key_press(row,col,on)
 
 	if row == 5 and col == 1 and self.effect_id_selected>0 and on then 
 		self.pressed_lfo = not self.pressed_lfo
-		if self.pressed_lfo then self.show_graphic = {"lfo",2} end
+		if self.pressed_lfo then self:show_text("lfo") end
+		if not self.pressed_lfo then self:show_text(effect_order[self.effect_id_selected]) end
 	elseif row == 5 and self.choosing_division then 
 		if on then 
 			self:update_division(col)
@@ -825,7 +834,7 @@ end
 function Kolor:choose_division()
 	self.choosing_division = not self.choosing_division
 	if self.choosing_division then 
-		self.show_graphic = {"clock",3}
+		self:show_text("clock")
 	end
 end
 
@@ -844,8 +853,7 @@ function Kolor:copy_effect()
 				self.effect_stored[k] = {value=e.value,lfo=e.lfo}
 			end
 		end
-
-		self.show_graphic = {"copied",3}
+		self:show_text("copied")
 	end
 end
 
@@ -856,7 +864,6 @@ function Kolor:paste_effect_to_track()
 	end
 	local k = effect_order[self.effect_id_selected]
 	local e = self.effect_stored[k]
-	-- self.show_graphic = {"pasted",3}
 	for row, _ in ipairs(self.pattern[self.current_pattern].track[self.track_current].trig) do 
 		for col, _ in ipairs(self.pattern[self.current_pattern].track[self.track_current].trig[row]) do 
 				self.pattern[self.current_pattern].track[self.track_current].trig[row][col].effect[k] = {value=e.value,lfo=e.lfo}
@@ -991,7 +998,7 @@ function Kolor:press_effect(effect_id)
 		do return end 
 	end
 	self.effect_id_selected = effect_id
-	self.show_graphic = {effect_order[effect_id],2}
+	self:show_text(effect_order[effect_id],2)
 end
 
 function Kolor:press_demo_file(row,col)
@@ -1019,7 +1026,7 @@ function Kolor:toggle_demo()
 	self.demo_mode = not self.demo_mode
 	-- determine which of the current tracks is already loaded
 	if self.demo_mode then 
-		self.show_graphic = {"bank",3}
+		self:show_text("bank")
 		for i=1,6 do 
 			for j,d in ipairs(self.track_files_available[i]) do 
 				print(i,self.track_files[i],d.filename,self.track_files[i] == d.filename)
@@ -1054,6 +1061,7 @@ end
 
 function Kolor:press_rec()
 	print("press_rec")
+	self:deselect()
 	self.is_recording = not self.is_recording
 end
 
@@ -1108,7 +1116,7 @@ function Kolor:undo()
 	-- insert into redo's and load undo
 	if #self.undo_trig > 0 then 
 		print("undoing")
-		self.show_graphic = {"undo",2}
+		self:show_text("undo")
 		local d = self.undo_trig[#self.undo_trig]
 		table.remove(self.undo_trig,#self.undo_trig)
 		table.insert(self.redo_trig,{d[1],d[2],d[3],d[4],json.encode(self.pattern[d[1]].track[d[2]].trig[d[3]][d[4]])})
@@ -1130,7 +1138,7 @@ function Kolor:redo()
 	-- insert into undo's
 	if #self.redo_trig > 0 then 
 		print("redoing")
-		self.show_graphic = {"redo",2}
+		self:show_text("redo")
 		local d = self.redo_trig[#self.redo_trig]
 		table.remove(self.redo_trig,#self.redo_trig)
 		table.insert(self.undo_trig,{d[1],d[2],d[3],d[4],json.encode(self.pattern[d[1]].track[d[2]].trig[d[3]][d[4]])})
