@@ -65,9 +65,32 @@ hopefully in an intuitive way
 
 ![img](./glance.jpeg)
 
+
+---
+
+### you should know...
+
+the scale bar changes
+
+by default it shows beats but
+
+if a *mod* is selected it shows a scale for that mod
+
+if *clock* is selected it shows a scale for divisions
+
 ---
 
 ![img](./play.jpeg)
+
+---
+
+### you should know...
+
+the brightness of each step indicates whether it is active
+
+unless a mod is selected, then
+
+the brightness of each step indicates its value for that mod
 
 ---
 
@@ -75,7 +98,38 @@ hopefully in an intuitive way
 
 ---
 
+### you should know...
+
+recording is quantized to the current track's division 
+
+which is set using the *clock* (more on that later)
+
+
+also, if a mod is active (more on that later, too) its current
+parameter will be pushed onto any activated step
+
+---
+
 ![img](./bank.jpeg)
+
+
+---
+
+
+### you should know...
+
+samples are stereo `.wav` files stored in
+
+`~/dust/audio/samples/bank[1-6]`
+
+each bank shows 32 samples in alphabetical order
+
+each sound selects from its respective bank
+
+---
+
+![img](./group.jpeg)
+
 
 ---
 
@@ -83,7 +137,12 @@ hopefully in an intuitive way
 
 ---
 
-![img](./group.jpeg)
+### you should know...
+
+each track has its own clock
+
+the track with the most steps determines when to transition
+to the next pattern
 
 ---
 
@@ -92,7 +151,52 @@ hopefully in an intuitive way
 
 ---
 
+### you should know...
+
+markov chaining 
+
+is where each pattern has a probability to transition
+
+to any other pattern
+
+changing those probabilities gives different chaining behaviors
+
+---
+
 ![img](./transform.jpeg)
+
+
+---
+
+### you should know...
+
+there are ten mods:
+
+- volume (0 to 1)
+- rate (-200% to 200%)
+- pan (-1 to 1)
+- low-pass filter (20 hz to 9k hz)
+- resonance (0 to 2)
+- high-pass filter (8k hz to 20k hz)
+- sample start (0 to 100% of length)
+- sample end position (0 to 100% of length)
+- retrig number (0 to 15 times)
+- probability (0 to 100%)
+- lfo lfo (0 to 64 beats)
+
+turn a mod on or off by pressing
+
+active mod blinks
+
+---
+
+### you should also know...
+
+when a step is not selected (i.e. no steps blinking), then you are editing the default parameters for the mods
+
+the current defaults are automatically put onto any new steps
+
+you can copy parameters from any active step into the defaults (next slide)
 
 ---
 
@@ -105,8 +209,38 @@ hopefully in an intuitive way
 
 ---
 
+### you should know...
+
+lfos are specific to each mod
+
+turn a lfo off by pressing lfo on the mod scale and pressing the first button in the lfo scale (row 5, column 1)
+
+this is the most menu diving you'll ever have to do
+
+---
+
 ![img](./lfos.jpeg)
 
+
+---
+
+### you should know...
+
+this feature might be gratuitous for kolor
+
+but i feel that we interact with music
+
+as a collection of lfos
+
+modulated by lfos
+
+so why not 
+
+lfo
+
+---
+
+## the end
 
 
     </textarea>
