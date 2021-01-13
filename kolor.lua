@@ -1,4 +1,16 @@
--- d
+-- kolor
+-- every light sequences samples
+--
+-- llllllll.co/t/kolor
+--
+-- this script mirrors the grid
+--
+--    ▼ instructions below ▼
+--
+-- E2 changes row
+-- E3 changes column
+-- K2 is left finger 
+-- K3 is right finger
 
 kolor = include("lib/kolor")
 d = nil 
