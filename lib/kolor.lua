@@ -182,12 +182,12 @@ function Kolor:new(args)
   o.selected_trig=nil
   o.effect_id_selected=0
   o.effect_stored = {}
-  for k,e in pairs(effect_available) do
-  	o.effect_stored[k] = {value=e.default,lfo={1,nil}}
-  	-- if #e.value < 15 then 
-  	-- 	print("UH OH "..k.." DOES NOT HAVE 15 value")
-  	-- end
-  end
+  for i=1,6 do 
+  	o.effect_stored[i]={}
+	  for k,e in pairs(effect_available) do
+	  	o.effect_stored[i][k] = {value=e.default,lfo={1,nil}}
+	  end
+	end
   o.visual = {}
   for i=1,8 do 
   	o.visual[i] = {} 
@@ -255,7 +255,7 @@ function Kolor:new(args)
 	  				pressed=false,
 	  				effect={},
 	  			}
-	  			for k,v in pairs(o.effect_stored) do 
+	  			for k,v in pairs(o.effect_stored[j]) do 
 		  			o.pattern[i].track[j].trig[row][col].effect[k]={value={v.value[1],v.value[2]},lfo={v.lfo[1],v.lfo[2]}}
 	  			end
 	  		end
@@ -494,7 +494,7 @@ function Kolor:emit_note(division)
 		if trig.active then 
 			if self.is_recording and self.effect_id_selected > 0 and i==self.track_current then 
 				-- copy current selected effect to the current trig on currently selected track
-				local e = self.effect_stored[effect_order[self.effect_id_selected]]
+				local e = self.effect_stored[i][effect_order[self.effect_id_selected]]
 				self.pattern[self.current_pattern].track[i].trig[self.pattern[self.current_pattern].track[i].pos[1]][self.pattern[self.current_pattern].track[i].pos[2]].effect[effect_order[self.effect_id_selected]] = {value=e.value,lfo=e.lfo}
 			end
 			local prob = get_effect(trig.effect,"probability")
@@ -584,7 +584,7 @@ function Kolor:get_visual()
 	-- draw bar gradient / scale / lfo scale
 	if self.effect_id_selected > 0 then 
 		-- if trig is selected, then show the current value
-		e = self.effect_stored[effect_order[self.effect_id_selected]]
+		e = self.effect_stored[self.track_current][effect_order[self.effect_id_selected]]
 		if trig_selected ~= nil then 
 			e = trig_selected.effect[effect_order[self.effect_id_selected]]
 		end
@@ -689,7 +689,7 @@ function Kolor:get_visual()
 	-- if trig selected, illuminate the status of the effects
 	-- if no trig, show the last effects set
 	for i,k in ipairs(effect_order) do 
-		local e = self.effect_stored[effect_order[i]]
+		local e = self.effect_stored[self.track_current][effect_order[i]]
 		if trig_selected ~= nil then 
 			e = trig_selected.effect[effect_order[i]]
 		end
@@ -882,12 +882,12 @@ function Kolor:copy_effect()
 			print("copying active effect from trig")
 			-- copy only the active effect 
 			local e = self.pattern[self.current_pattern].track[self.track_current].trig[self.selected_trig[1]][self.selected_trig[2]].effect[effect_order[self.effect_id_selected]]
-			self.effect_stored[effect_order[self.effect_id_selected]] = {value=e.value,lfo=e.lfo}
+			self.effect_stored[self.track_current][effect_order[self.effect_id_selected]] = {value=e.value,lfo=e.lfo}
 		else
 			print("copying all effects from trig")
-			self.effect_stored = {}
+			self.effect_stored[self.track_current] = {}
 			for k,e in pairs(self.pattern[self.current_pattern].track[self.track_current].trig[self.selected_trig[1]][self.selected_trig[2]].effect) do 
-				self.effect_stored[k] = {value=e.value,lfo=e.lfo}
+				self.effect_stored[self.track_current][k] = {value=e.value,lfo=e.lfo}
 			end
 		end
 		self:show_text("copied")
@@ -900,7 +900,7 @@ function Kolor:paste_effect_to_track()
 		do return end 
 	end
 	local k = effect_order[self.effect_id_selected]
-	local e = self.effect_stored[k]
+	local e = self.effect_stored[self.track_current][k]
 	for row, _ in ipairs(self.pattern[self.current_pattern].track[self.track_current].trig) do 
 		for col, _ in ipairs(self.pattern[self.current_pattern].track[self.track_current].trig[row]) do 
 				self.pattern[self.current_pattern].track[self.track_current].trig[row][col].effect[k] = {value=e.value,lfo=e.lfo}
@@ -995,7 +995,7 @@ function Kolor:update_effect(scale_id,on)
 	else
 		-- update the cache
 		print("updating effect_store")
-		self.effect_stored[effect_order[self.effect_id_selected]].value = {value[1],value[2]}
+		self.effect_stored[self.track_current][effect_order[self.effect_id_selected]].value = {value[1],value[2]}
 	end
 end
 
@@ -1035,7 +1035,7 @@ function Kolor:update_lfo(scale_id,on)
 	else
 		-- update the cache
 		print("updating effect_store")
-		self.effect_stored[effect_order[self.effect_id_selected]].lfo = {lfo[1],lfo[2]}
+		self.effect_stored[self.track_current][effect_order[self.effect_id_selected]].lfo = {lfo[1],lfo[2]}
 	end
 end
 
@@ -1063,7 +1063,7 @@ function Kolor:press_demo_file(row,col)
 				end
 				self.track_files_available[self.track_current][i].loaded = true
 			else
-				self:play_trig(self.track_current,self.effect_stored,self.pattern[self.current_pattern].track[self.track_current].choke)
+				self:play_trig(self.track_current,self.effect_stored[self.track_current],self.pattern[self.current_pattern].track[self.track_current].choke)
 			end
 			break
 		end
@@ -1092,7 +1092,7 @@ function Kolor:press_track(track)
 		self:deselect()
 	end
 	self.track_current = track 
-	self:play_trig(track,self.effect_stored,self.pattern[self.current_pattern].track[track].choke)
+	self:play_trig(track,self.effect_stored[self.track_current],self.pattern[self.current_pattern].track[track].choke)
 	if self.is_playing and self.is_recording then 
 		-- add sample to track in quantized position
 		local t = current_time()
@@ -1170,7 +1170,7 @@ function Kolor:press_trig(row,col,noselect)
 	self.selected_trig = nil
 	if not self.pattern[self.current_pattern].track[self.track_current].trig[row][col].active then
 		-- reset the effects to the cached effects
-		for k,e in pairs(self.effect_stored) do 
+		for k,e in pairs(self.effect_stored[self.track_current]) do 
 			self.pattern[self.current_pattern].track[self.track_current].trig[row][col].effect[k] = {value=e.value,lfo=e.lfo} 
 		end
 	end
