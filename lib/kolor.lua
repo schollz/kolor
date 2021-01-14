@@ -206,7 +206,6 @@ function Kolor:new(args)
 		local row = 1 
 		local col = 1 
 		for j,f in ipairs(filelist) do 
-			print(row,col,f)
 			table.insert(o.track_files_available[i], {row=row,col=col,filename=f,loaded=false})
 			col = col + 1 
 			if col > 16 then 
@@ -754,7 +753,7 @@ function Kolor:get_visual()
 		if i==self.track_current then 
 			self.visual[8][i+1] = self.visual[8][i+1] *self.blinky[6] 
 		end
-		if self.pressed_buttons["8,"..i+1] ~= nil then -- show choke group when trigger is pressed
+		if self.pressed_buttons["7,1"] ~= nil and i==self.track_current then -- show choke group when stop is pressed
 			-- turn off mutes
 			for j=1,6 do 
 				self.visual[7][j+1]=0
@@ -1115,18 +1114,14 @@ function Kolor:press_track(track)
 end
 
 function Kolor:press_mute_choke(track)
-	-- if track butotn is pressed, set the choke
-	track_pressed = 0 
-	for i=1,6 do 
-		if self.pressed_buttons["8,"..i+1] ~= nil then 
-			track_pressed = i 
-		end
-	end
-	if track_pressed == 0 then 
-		-- otherwise mute
+	-- if stop button is pressed, set the choke
+	local stop_pressed = self.pressed_buttons["7,1"] 
+	if stop_pressed == nil or not stop_pressed then 
+		-- mute
 		self.muted[track] = not self.muted[track]
 	else
-		self.pattern[self.current_pattern].track[track_pressed].choke = track
+		-- change choke pattern for currently selected track
+		self.pattern[self.current_pattern].track[self.track_current].choke = track
 	end
 end
 

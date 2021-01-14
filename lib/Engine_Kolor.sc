@@ -13,7 +13,7 @@ Engine_Kolor : CroneEngine {
 	alloc {
 
 		sampleBuff = Array.fill(6, { arg i; 
-			Buffer.read(context.server, "/home/we/dust/audio/samples/silence.wav"); 
+			Buffer.read(context.server, "/home/we/dust/code/kolor/samples/silence.wav"); 
 		});
 
 		(0..6).do({arg i; 
