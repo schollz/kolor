@@ -394,7 +394,7 @@ function Kolor:load(filename)
 end
 
 function Kolor:grid_key(x,y,z)
-	self:key_press(x,y,z==1)
+	self:key_press(y,x,z==1)
 	self:grid_redraw()
 end
 
