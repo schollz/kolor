@@ -311,7 +311,7 @@ function Kolor:new(args)
   -- initiate the grid
   -- grid specific
 	o.g = grid.connect()
-	o.g.key = o.grid_key
+	o.g.key = o:grid_key
 	-- grid refreshing
   o.grid_refresh = metro.init()
   o.grid_refresh.time = 0.05
