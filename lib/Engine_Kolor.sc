@@ -16,7 +16,7 @@ Engine_Kolor : CroneEngine {
 			Buffer.read(context.server, "/home/we/dust/audio/samples/silence.wav"); 
 		});
 
-		(0..5).do({arg i; 
+		(0..6).do({arg i; 
 			SynthDef("player"++i,{ arg sampleBufnum=0, t_trig=0, lfolfo=0.0, currentTime=0.0, 
 				ampMin=0.0, ampMax=0.0, ampLFOMin=0.0, ampLFOMax=0.0, 
 				rateMin=1.0, rateMax=1.0, rateLFOMin=0.0, rateLFOMax=0.0,
@@ -68,12 +68,15 @@ Engine_Kolor : CroneEngine {
 					Phasor.ar(
 						trig:t_trig,
 						rate:BufRateScale.kr(sampleBufnum)*rate,
+						// start:sampleStart*BufFrames.kr(sampleBufnum),
+						// end:sampleEnd*BufFrames.kr(sampleBufnum),
+						// resetPos:sampleStart*BufFrames.kr(sampleBufnum)
 						start:((sampleStart*(rate>0))+(sampleEnd*(rate<0)))*BufFrames.kr(sampleBufnum),
 						end:((sampleEnd*(rate>0))+(sampleStart*(rate<0)))*BufFrames.kr(sampleBufnum),
 						resetPos:((sampleStart*(rate>0))+(sampleEnd*(rate<0)))*BufFrames.kr(sampleBufnum)
 					)
-					loop:1,
-					interpolation:2
+					loop:(retrig>0),
+					interpolation:1
 				);
 				// bufsnd = PlayBuf.ar(2, sampleBufnum,
 				// 	rate:rate*BufRateScale.kr(sampleBufnum),
@@ -86,7 +89,7 @@ Engine_Kolor : CroneEngine {
 					Pan2.ar(bufsnd[0],-1+(2*pan),amp),
 					Pan2.ar(bufsnd[1],1+(2*pan),amp),
 				]);
-				Out.ar(0,snd*EnvGen.ar(Env([0,1, 1, 0], [0.005,(sampleEnd-sampleStart)/(rate.abs)*(retrig+1)*BufDur.kr(sampleBufnum),0.005]),gate:t_gate))
+				Out.ar(0,snd*EnvGen.ar(Env([0,1, 1, 0], [0.005,(sampleEnd-sampleStart)/(rate.abs)*(retrig+1)*BufDur.kr(sampleBufnum)-0.015,0.005]),gate:t_gate))
 			}).add;	
 		});
 

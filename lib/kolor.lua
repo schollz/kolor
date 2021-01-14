@@ -160,7 +160,7 @@ function Kolor:new(args)
   if not util.file_exists(_path.audio.."kolor/silence.wav") then 
   	os.execute("cp ".._path.code.."kolor/samples/silence.wav ".._path.audio.."kolor/silence.wav")
   	for i=1,6 do 
-	  	os.execute("cp ".._path.code.."kolor/samples/bank"..i.." ".._path.audio.."kolor/")
+	  	os.execute("cp -r ".._path.code.."kolor/samples/bank"..i.." ".._path.audio.."kolor/")
   	end
   end
 
@@ -199,7 +199,7 @@ function Kolor:new(args)
   o.demo_mode = false
   o.track_files_available = {}
   for i=1,6 do 
-		local filelist = list_files(__path.audio.."kolor/bank"..i,{},true)
+		local filelist = list_files(_path.audio.."kolor/bank"..i,{},true)
 		o.track_files_available[i] = {}
 		local row = 1 
 		local col = 1 
