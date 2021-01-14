@@ -1,4 +1,4 @@
--- kolor
+-- kolor v0.0.0 
 -- every light sequences samples
 --
 -- llllllll.co/t/kolor
