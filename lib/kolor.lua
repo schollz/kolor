@@ -3,9 +3,6 @@ graphic_pixels = include("kolor/lib/pixels")
 json = include("kolor/lib/json")
 
 local Kolor = {}
-engine.name="Kolor"
-
-
 
 local effect_available = {
   	volume = {default={8,nil},value={}},
@@ -234,7 +231,7 @@ function Kolor:new(args)
   	for j=1,6 do 
 	  	o.pattern[i].track[j] = {
 	  		pos={1,1},
-	  		pos_max={1,16},
+	  		pos_max={4,16},
 	  		-- pos_max={4,16},
 	  		trig={},
 	  		longest_track=j==1,
@@ -290,7 +287,7 @@ function Kolor:new(args)
 
   -- load the filenames into each track
   for i=1,6 do 
-  	engine.samplefile(i,o.track_files[i])
+  	engine.kolorsample(i,o.track_files[i])
   end
 
   -- debouncing and blinking
@@ -390,7 +387,7 @@ function Kolor:load(filename)
 		self[k] = v
 	end	
   for i=1,6 do 
-  	engine.samplefile(i,self.track_files[i])
+  	engine.kolorsample(i,self.track_files[i])
   end
 end
 
@@ -503,7 +500,7 @@ function Kolor:emit_note(division)
 			local probability = calculate_lfo(prob[1],prob[2],prob[3],prob[4],lfolfo[1])
 			if not self.muted[i] and math.random() < probability then 
 				-- emit 
-				d:play_trig(i,trig.effect,self.pattern[self.current_pattern].track[i].choke)
+				self:play_trig(i,trig.effect,self.pattern[self.current_pattern].track[i].choke)
 			end
 		end 
 		::continue::
@@ -529,18 +526,18 @@ function Kolor:play_trig(i,effect,choke)
 	-- 	sample_start[1] = 1 - sample_start[1]
 	-- 	sample_start[2] = 1 - sample_start[2]
 	-- end
-	print(i,current_time(),
-		volume[1],volume[2],volume[3],volume[4],
-		rate[1],rate[2],rate[3],rate[4],
-		pan[1],pan[2],pan[3],pan[4],
-		lpf[1],lpf[2],lpf[3],lpf[4],
-		resonance[1],resonance[2],resonance[3],resonance[4],
-		hpf[1],hpf[2],hpf[3],hpf[4],
-		sample_start[1],sample_start[2],sample_start[3],sample_start[4],
-		sample_end[1],sample_end[2],sample_end[3],sample_end[4],
-		retrig[1],
-		lfolfo[1])
-	engine.play(choke,current_time(),
+	-- print(i,current_time(),
+	-- 	volume[1],volume[2],volume[3],volume[4],
+	-- 	rate[1],rate[2],rate[3],rate[4],
+	-- 	pan[1],pan[2],pan[3],pan[4],
+	-- 	lpf[1],lpf[2],lpf[3],lpf[4],
+	-- 	resonance[1],resonance[2],resonance[3],resonance[4],
+	-- 	hpf[1],hpf[2],hpf[3],hpf[4],
+	-- 	sample_start[1],sample_start[2],sample_start[3],sample_start[4],
+	-- 	sample_end[1],sample_end[2],sample_end[3],sample_end[4],
+	-- 	retrig[1],
+	-- 	lfolfo[1])
+	engine.kolorplay(choke,current_time(),
 		volume[1],volume[2],volume[3],volume[4],
 		rate[1],rate[2],rate[3],rate[4],
 		pan[1],pan[2],pan[3],pan[4],
@@ -1058,7 +1055,7 @@ function Kolor:press_demo_file(row,col)
 		if d.row == row and d.col == col then 
 			if d.loaded == false then 
 				print("loaded "..d.filename)
-				engine.samplefile(self.track_current,d.filename)
+				engine.kolorsample(self.track_current,d.filename)
 				for j, _ in ipairs(self.track_files_available[self.track_current]) do 
 					self.track_files_available[self.track_current][j].loaded = false 
 				end
@@ -1210,6 +1207,14 @@ function Kolor:redo()
 		table.insert(self.undo_trig,{d[1],d[2],d[3],d[4],json.encode(self.pattern[d[1]].track[d[2]].trig[d[3]][d[4]])})
 		self.pattern[d[1]].track[d[2]].trig[d[3]][d[4]]=json.decode(d[5])
 	end
+end
+
+function Kolor:demo()
+	local f = assert(io.open("/home/we/dust/code/kolor/samples/demo1.json","rb"))
+	local content = f:read("*all")
+  self.pattern[8] = json.decode(content)
+	f:close()
+  self:press_pattern(8)
 end
 
 return Kolor

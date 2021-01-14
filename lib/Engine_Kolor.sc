@@ -3,8 +3,10 @@
 // Inherit methods from CroneEngine
 Engine_Kolor : CroneEngine {
 
+	// Kolor specific
 	var sampleBuff;
 	var samplerPlayer;
+	// Kolor ^
 
 	*new { arg context, doneCallback;
 		^super.new(context, doneCallback);
@@ -118,13 +120,13 @@ Engine_Kolor : CroneEngine {
 			Synth("player"++i,[\bufnum:sampleBuff[i]], target:context.xg);
 		});
 
-		this.addCommand("samplefile","is", { arg msg;
+		this.addCommand("kolorsample","is", { arg msg;
 			// lua is sending 1-index
 			sampleBuff[msg[1]-1].free;
 			sampleBuff[msg[1]-1] = Buffer.read(context.server,msg[2]);
 		});
 
-		this.addCommand("play","iffffffffffffffffffffffffffffffffffffffffffffffff", { arg msg;
+		this.addCommand("kolorplay","iffffffffffffffffffffffffffffffffffffffffffffffff", { arg msg;
 			// lua is sending 1-index
 			samplerPlayer[msg[1]-1].set(
 				\t_trig,1,

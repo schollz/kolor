@@ -17,69 +17,12 @@ d = nil
 position={1,1}
 press_positions={{0,0},{0,0}}
 
+engine.name="Kolor"
+
+
 function init()
   d = kolor:new()
-  
-  pattern=1
-  patterns = {
-    -- {
-    --   {},
-    --   {},
-    --   {},
-    --   {1},
-    -- },
-    -- {
-    --   {1,4,7,10,15},
-    --   {5,11},
-    --   {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16},
-    --   {},
-    -- },
-    -- {
-    --   {1,4,6,9,12},
-    --   {5,10,13,16},
-    --   {8,11},
-    --   {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16},
-    -- },
-    -- {
-    --   {1,4,8,9,11,15},
-    --   {5,10,13},
-    --   {10,12},
-    --   {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16},
-    -- },
-    -- {
-    --   {1,4,9,11,12,14,15},
-    --   {5,8,10,13,16},
-    --   {8,11},
-    --   {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16},
-    -- },
-  }
-  for row,p in ipairs(patterns) do 
-    for i,track in ipairs(p) do
-      d:press_track(i)
-      for _, v in ipairs(track) do 
-        d:key_press(row,v,true)
-        d:key_press(row,v,false)
-      end
-    end
-  end
-  -- d:key_press(8,2,true)
-  -- d:key_press(8,2,false)
-  -- d:key_press(6,14,true)
-  -- d:key_press(6,14,false)
-  -- d:key_press(6,2,true)
-  -- d:key_press(6,2,false)
-  -- d:key_press(8,1,true)
-  -- d:key_press(8,1,false)
-
-  -- d:press_trig(1,1)
-  -- d:press_trig(1,2)
-  -- d:press_trig(2,1)
-  -- d:press_trig(1,3)
-  -- d:press_trig(2,3)
-  -- pattern=2
-  -- bd={1,4,7,10,15}
-  -- sd={5,11}
-
+  d:demo()
 
 
   clock.run(grid_redraw_clock) -- start the grid redraw clock
