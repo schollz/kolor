@@ -562,18 +562,18 @@ function Kolor:get_visual()
 		end
 		if self.pressed_lfo then 
 			-- draw lfo scale
-			self.visual[5][1] = 7
-			if e.lfo[1] > 1 and e.lfo[2] == nil then 
-				self.visual[5][1] = 7*self.blinky[e.lfo[1]]
-			elseif e.lfo[1] > 1 and e.lfo[2] ~= nil then 
-				self.visual[5][1] = 7 + 7*self.blinky[e.lfo[1]]
-			end
+			self.visual[5][1] = 15*self.blinky[1]
+			-- if e.lfo[1] > 1 and e.lfo[2] == nil then 
+			-- 	self.visual[5][1] = 7*self.blinky[e.lfo[1]]
+			-- elseif e.lfo[1] > 1 and e.lfo[2] ~= nil then 
+			-- 	self.visual[5][1] = 7 + 7*self.blinky[e.lfo[1]]
+			-- end
 			for i=1,15 do 
 				self.visual[5][i+1]=i
 				if (i==e.lfo[1] and e.lfo[2] == nil) or (e.lfo[2] ~= nil and i>=e.lfo[1] and i<=e.lfo[2]) then
 					self.visual[5][i+1]=15
 					if i > 1 then  
-						self.visual[5][i+1] = self.visual[5][i+1] * self.blinky[i]
+						self.visual[5][i+1] = self.visual[5][i+1] * self.blinky[2]
 					end
 				end
 			end
@@ -581,7 +581,6 @@ function Kolor:get_visual()
 			-- draw effect scale
 			self.visual[6][self.effect_id_selected+1]=15
 			for i=1,15 do
-				-- WORK
 				if effect_available[effect_order[self.effect_id_selected]].lights ~= nil then 
 					self.visual[5][i+1]=effect_available[effect_order[self.effect_id_selected]].lights[i]
 				else
@@ -625,7 +624,7 @@ function Kolor:get_visual()
 				self.visual[d.row][d.col] = 14 
 			end
 		end
-		self.visual[8][16] = 15 *self.blinky[3]
+		self.visual[8][16] = 15 *self.blinky[1]
 	elseif self.pressed_buttons_bar then
 		-- illuminate the available area for trigs
 		for row=1,self.pattern[self.current_pattern].track[self.track_current].pos_max[1] do 
@@ -667,9 +666,6 @@ function Kolor:get_visual()
 			e = trig_selected.effect[effect_order[i]]
 		end
 		self.visual[6][i+1] = e.value[1]
-		if e.value[2] ~= nil then 
-			self.visual[6][i+1] = self.visual[6][i+1] + self.blinky[4]*(e.value[2]-e.value[1])
-		end
 		if i==self.effect_id_selected then 
 			self.visual[6][i+1] = self.visual[6][i+1] * self.blinky[4] 
 		end
@@ -714,13 +710,16 @@ function Kolor:get_visual()
 	-- illuminate non-muted tracks, show if they are playing, blink if selected
 	for i,track in ipairs(self.pattern[self.current_pattern].track) do 
 		if not track.muted then 
-			self.visual[8][i+1] = 5
+			self.visual[8][i+1] = 1
+			if i==self.track_current then 
+				self.visual[8][i+1] = 4
+			end
 			if self.track_playing[i] and self.is_playing then 
-				self.visual[8][i+1] = 14
+				self.visual[8][i+1] = 15
 			end
 		else
 			self.visual[8][i+1] = 1
-			self.visual[7][i+1] = 14
+			self.visual[7][i+1] = 15
 		end
 		if i==self.track_current then 
 			self.visual[8][i+1] = self.visual[8][i+1] *self.blinky[6] 
@@ -751,15 +750,15 @@ function Kolor:get_visual()
 	-- draw buttons
 	if self.is_playing then 
 		self.visual[8][1] = 15 -- play button
-		self.visual[7][1] = 4  -- stop button
+		self.visual[7][1] = 1  -- stop button
 	else
-		self.visual[8][1] = 4
+		self.visual[8][1] = 1
 		self.visual[7][1] = 15 
 	end
 	if self.is_recording then 
 		self.visual[6][1] = 15 -- rec button
 	else
-		self.visual[6][1] = 4
+		self.visual[6][1] = 1
 	end
 
 	-- illuminate currently pressed button
