@@ -2,6 +2,9 @@
 
 every light sequences samples.
 
+![Image](https://user-images.githubusercontent.com/6550035/104591857-284ddb80-5622-11eb-8c7a-cb1aaff0894b.png)
+
+
 the words "כל אור" translate from Hebrew to English as "every light" and is pronounced "kol-or". its meant to portray my attempt of using every light to sequence samples with [the grid](https://monome.org/docs/grid/).
 
 this script is born out an exploration of sampler sequencers. i drew inspiration from the op-z and model:samples (though i don't own these i was inspired by how i think they are supposed to work). i had five goals making this sample sequencer:

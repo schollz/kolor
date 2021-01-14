@@ -219,6 +219,7 @@ function Kolor:new(args)
 		end
   end
   o.track_files = {}
+  o.muted = {false,false,false,false,false,false}
   o.pattern = {}
   for i=1,8 do 
   	o.pattern[i] = {}
@@ -233,7 +234,6 @@ function Kolor:new(args)
   	o.pattern[i].track = {}
   	for j=1,6 do 
 	  	o.pattern[i].track[j] = {
-	  		muted=false,
 	  		pos={1,1},
 	  		pos_max={1,16},
 	  		-- pos_max={4,16},
@@ -500,7 +500,7 @@ function Kolor:emit_note(division)
 			local prob = get_effect(trig.effect,"probability")
 			local lfolfo = get_effect(trig.effect,"lfolfo")
 			local probability = calculate_lfo(prob[1],prob[2],prob[3],prob[4],lfolfo[1])
-			if not self.pattern[self.current_pattern].track[i].muted and math.random() < probability then 
+			if not self.muted[i] and math.random() < probability then 
 				-- emit 
 				d:play_trig(i,trig.effect,self.pattern[self.current_pattern].track[i].choke)
 			end
@@ -737,7 +737,7 @@ function Kolor:get_visual()
 
 	-- illuminate non-muted tracks, show if they are playing, blink if selected
 	for i,track in ipairs(self.pattern[self.current_pattern].track) do 
-		if not track.muted then 
+		if not self.muted[i] then 
 			self.visual[8][i+1] = 1
 			if i==self.track_current then 
 				self.visual[8][i+1] = 4
@@ -1122,7 +1122,7 @@ function Kolor:press_mute_choke(track)
 	end
 	if track_pressed == 0 then 
 		-- otherwise mute
-		self.pattern[self.current_pattern].track[track].muted = not self.pattern[self.current_pattern].track[track].muted 
+		self.muted[track] = not self.muted[track]
 	else
 		self.pattern[self.current_pattern].track[track_pressed].choke = track
 	end
