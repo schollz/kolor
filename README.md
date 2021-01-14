@@ -29,22 +29,6 @@ i'm totally open to ideas to remove these limitations or improve in general.
 
 ## documentation
 
-### installation
-
-kolor works without a grid, but its mean to be used with one. without a grid you can run the *kolor* script. this script is essentially a grid emulator - you will see a screen with 128 buttons which you can manipulate by moving around (K2 and K3) and pressing with your "fingers" (K2 is one finger, K3 is another finger, so you can press and hold one button while pressing another button).
-
-if you have a grid, you don't need to run the *kolor* script. you can actually addy *kolor* to any non-grid script. simply add these two lines into the top of the `init()` function:
-
-
-```lua
-kolor = include("lib/kolor")
-kolor:new()
-```
-
-both methods need to have kolor installed on your norns via maiden or git.
-
-### usage
-
 the usage documentation lives at [schollz.github.io/kolor](https://schollz.github.io/kolor/).
 
 ## license
