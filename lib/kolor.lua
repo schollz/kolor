@@ -21,6 +21,8 @@ local effect_available = {
   	reverb = {default={1,nil},value={}},
   	probability = {default={15,nil},value={}},
   	lfolfo = {default={1,nil},value={}},
+  	delay = {default={1,nil},value={}},
+  	feedback = {default={14,nil},value={}},
 }
 
 local effect_order = {
@@ -35,6 +37,8 @@ local effect_order = {
 	"retrig",
 	"probability",
 	"lfolfo",
+	"delay",
+	"feedback",
 }
 for i=1,15 do 
 	effect_available.volume.value[i]=(i-1)/14
@@ -48,6 +52,8 @@ for i=1,15 do
 	effect_available.reverb.value[i]=(i-1)/14
 	effect_available.probability.value[i]=(i-1)/14
 	effect_available.lfolfo.value[i]=i
+	effect_available.delay.value[i]=(i-1)/14
+	effect_available.feedback.value[i]=(i-1)/14*128
 end
 
 local function deepcopy(orig)
@@ -522,8 +528,10 @@ function Kolor:play_trig(i,effect,choke)
 		hpf[1],hpf[2],hpf[3],hpf[4],
 		sample_start[1],sample_start[2],sample_start[3],sample_start[4],
 		sample_end[1],sample_end[2],sample_end[3],sample_end[4],
-		retrig[1],
-		lfolfo[1],i)
+		retrig[1],retrig[2],retrig[3],retrig[4],
+		0.5,0.5,0,0,
+		64,64,0,0,
+		lfolfo[1],i,clock.get_beat_sec())
 end
 
 -- returns the visualization of the matrix

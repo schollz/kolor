@@ -26,9 +26,12 @@ Engine_Kolor : CroneEngine {
 				hpfMin=10.0, hpfMax=10.0, hpfLFOMin=0.0, hpfLFOMax=0.0,
 				sampleStartMin=0.0, sampleStartMax=0.0, sampleStartLFOMin=0.0, sampleStartLFOMax=0.0,
 				sampleEndMin=1.0, sampleEndMax=1.0, sampleEndLFOMin=0.0, sampleEndLFOMax=0.0,
-				t_gate=0,retrig=0;
+				retrigMin=1.0, retrigMax=1.0, retrigLFOMin=0.0, retrigLFOMax=0.0,
+				delaySendMin=1.0, delaySendMax=1.0, delaySendLFOMin=0.0, delaySendLFOMax=0.0,
+				delayFeedbackMin=1.0, delayFeedbackMax=1.0, delayFeedbackLFOMin=0.0, delayFeedbackLFOMax=0.0,
+				secondsPerBeat=0.5,t_gate=0;
 				
-				var amp, rate, pan, lpf, resonance, hpf, sampleStart, sampleEnd, snd, bufsnd;
+				var amp, rate, pan, lpf, resonance, hpf, sampleStart, sampleEnd, snd, bufsnd, delaySend, delayFeedback, retrig;
 				
 				// lfo modulation
 				amp = SinOsc.kr(
@@ -63,6 +66,18 @@ Engine_Kolor : CroneEngine {
 					SinOsc.kr(lfolfo,(currentTime*2*pi*sampleEndLFOMin).mod(2*pi),mul:(sampleEndLFOMax-sampleEndLFOMin),add:(sampleEndLFOMax+sampleEndLFOMin)/2),
 					(currentTime*2*pi*sampleEndLFOMin).mod(2*pi),mul:(sampleEndMax-sampleEndMin)/2,add:(sampleEndMax+sampleEndMin)/2
 				);
+				retrig = SinOsc.kr(
+					SinOsc.kr(lfolfo,(currentTime*2*pi*retrigLFOMin).mod(2*pi),mul:(retrigLFOMax-retrigLFOMin),add:(retrigLFOMax+retrigLFOMin)/2),
+					(currentTime*2*pi*retrigLFOMin).mod(2*pi),mul:(retrigMax-retrigMin)/2,add:(retrigMax+retrigMin)/2
+				);
+				delaySend = SinOsc.kr(
+					SinOsc.kr(lfolfo,(currentTime*2*pi*delaySendLFOMin).mod(2*pi),mul:(delaySendLFOMax-delaySendLFOMin),add:(delaySendLFOMax+delaySendLFOMin)/2),
+					(currentTime*2*pi*delaySendLFOMin).mod(2*pi),mul:(delaySendMax-delaySendMin)/2,add:(delaySendMax+delaySendMin)/2
+				);
+				delayFeedback = SinOsc.kr(
+					SinOsc.kr(lfolfo,(currentTime*2*pi*delayFeedbackLFOMin).mod(2*pi),mul:(delayFeedbackLFOMax-delayFeedbackLFOMin),add:(delayFeedbackLFOMax+delayFeedbackLFOMin)/2),
+					(currentTime*2*pi*delayFeedbackLFOMin).mod(2*pi),mul:(delayFeedbackMax-delayFeedbackMin)/2,add:(delayFeedbackMax+delayFeedbackMin)/2
+				);
 				
 				bufsnd = BufRd.ar(2,sampleBufnum,
 					Phasor.ar(
@@ -83,13 +98,19 @@ Engine_Kolor : CroneEngine {
 				// 	startPos:sampleStart*BufFrames.kr(sampleBufnum),
 				// 	loop:retrig, // if > 0 then it loops, getting stopped by the envelope
 				// 	trigger:t_trig);
-	        	bufsnd = MoogFF.ar(bufsnd,lpf,resonance);
-	        	bufsnd = HPF.ar(bufsnd,hpf);
+	        		bufsnd = MoogFF.ar(bufsnd,lpf,resonance);
+	        		bufsnd = HPF.ar(bufsnd,hpf);
 				snd = Mix.ar([
 					Pan2.ar(bufsnd[0],-1+(2*pan),amp),
 					Pan2.ar(bufsnd[1],1+(2*pan),amp),
 				]);
-				Out.ar(0,snd*EnvGen.ar(Env([0,1, 1, 0], [0.005,(sampleEnd-sampleStart)/(rate.abs)*(retrig+1)*BufDur.kr(sampleBufnum)-0.015,0.005]),gate:t_gate))
+				Out.ar(0,
+					snd*EnvGen.ar(Env([0,1, 1, 0], [0.005,(sampleEnd-sampleStart)/(rate.abs)*(retrig+1)*BufDur.kr(sampleBufnum)-0.015,0.005]),gate:t_gate) +
+					CombN.ar(
+						snd*EnvGen.ar(Env([0,1, 1, 0], [0.005,(sampleEnd-sampleStart)/(rate.abs)*(retrig+1)*BufDur.kr(sampleBufnum)-0.015,0.005]),gate:t_gate),
+						1,secondsPerBeat/8*2,secondsPerBeat/8*delayFeedback,0.75*delaySend // delayFeedback should vary between 2 and 128
+					)
+				)
 			}).add;	
 		});
 
@@ -103,7 +124,7 @@ Engine_Kolor : CroneEngine {
 			sampleBuff[msg[1]-1] = Buffer.read(context.server,msg[2]);
 		});
 
-		this.addCommand("play","ifffffffffffffffffffffffffffffffffffi", { arg msg;
+		this.addCommand("play","iffffffffffffffffffffffffffffffffffffffffffffffff", { arg msg;
 			// lua is sending 1-index
 			samplerPlayer[msg[1]-1].set(
 				\t_trig,1,
@@ -116,9 +137,12 @@ Engine_Kolor : CroneEngine {
 				\hpfMin,msg[23],\hpfMax,msg[24],\hpfLFOMin,msg[25],\hpfLFOMax,msg[26],
 				\sampleStartMin,msg[27],\sampleStartMax,msg[28],\sampleStartLFOMin,msg[29],\sampleStartLFOMax,msg[30],
 				\sampleEndMin,msg[31],\sampleEndMax,msg[32],\sampleEndLFOMin,msg[33],\sampleEndLFOMax,msg[34],
-				\retrig,msg[35],
-				\lfolfo,msg[36],
-				\sampleBufnum,sampleBuff[msg[37]-1],
+				\retrigMin,msg[35],\retrigMax,msg[36],\retrigLFOMin,msg[37],\retrigLFOMax,msg[38],
+				\delaySendMin,msg[39],\delaySendMax,msg[40],\delaySendLFOMin,msg[41],\delaySendLFOMax,msg[42],
+				\delayFeedbackMin,msg[43],\delayFeedbackMax,msg[44],\delayFeedbackLFOMin,msg[45],\delayFeedbackLFOMax,msg[46],
+				\lfolfo,msg[47],
+				\sampleBufnum,sampleBuff[msg[48]-1],
+				\secondsPerBeat,msg[49],
 				\t_gate,1
 			);
 		});
