@@ -332,7 +332,6 @@ function Kolor:new(args)
       do return end
     end
     -- save
-    -- TODO: show graphic while saving
     o:save(name_folder..x)
     params:set("save_message_d","saved as "..x)
   end)
@@ -349,7 +348,6 @@ function Kolor:new(args)
     print("load_name: "..x)
     pathname,filename,ext=string.match(x,"(.-)([^\\/]-%.?([^%.\\/]*))$")
     print("loading "..filename)
-    -- TODO: show graphic while loading
     o:load(x)
     params:set("save_message_d","loaded "..filename..".")
   end)
@@ -460,12 +458,36 @@ function Kolor:emit_note(division)
 			self.pattern[self.current_pattern].track[i].pos[1] = 1
 			if self.pattern[self.current_pattern].track[i].longest_track then
 				-- starting over! note: longest track determines when queue next
-				self.current_pattern = self.pattern[self.current_pattern].next_pattern_queued
+
 				for j, _ in ipairs(self.pattern[self.current_pattern].track) do 
 					self.pattern[self.current_pattern].track[j].pos[1] = 1
 					self.pattern[self.current_pattern].track[j].pos[2] = 1
 				end
-				-- TODO: use markov chains here to determine next queued pattern
+				if self.pattern[self.current_pattern].next_pattern_queued > 0 then 
+					-- use manually cued
+					local next_pattern_queued =  self.pattern[self.current_pattern].next_pattern_queued
+					self.pattern[self.current_pattern].next_pattern_queued = 0
+					self.current_pattern = next_pattern_queued
+				else
+					-- use markov chains here to determine next queued pattern
+					local total_prob = 0 
+					for j=1,8 do 
+						total_prob = total_prob + self.pattern[self.current_pattern].next_pattern[j]
+					end
+					if total_prob > 0 then 
+						local r = math.random(1,total_prob)
+						local r0 = 0
+						for j=1,8 do 
+							r0 = r0 + self.pattern[self.current_pattern].next_pattern[j]
+							if r <= r0 then 
+								self.current_pattern = j 
+								break
+							end
+						end
+					end
+				end
+				print("switched to pattern "..self.current_pattern)
+
 			end
 		end
 		trig = self.pattern[self.current_pattern].track[i].trig[self.pattern[self.current_pattern].track[i].pos[1]][self.pattern[self.current_pattern].track[i].pos[2]]
