@@ -933,6 +933,19 @@ function Kolor:press_chain_pattern(pattern_id)
 end
 
 function Kolor:press_pattern(pattern_id)
+	-- check if another pattern is being pressed (for copying)
+	for col=8,15 do 
+		if col ~= pattern_id+7 then
+			if self.pressed_buttons["8,"..col] == true then 
+				-- copy pattern
+				other_id = col - 7 
+				print("copying pattern "..other_id.." to "..pattern_id)
+				self:show_text("copied",5)
+				self.pattern[pattern_id].track[self.track_current] = json.decode(json.encode(self.pattern[other_id].track[self.track_current]))
+				do return end
+			end
+		end
+	end
 	self:deselect()
 	if self.is_playing then 
 		self.pattern[self.current_pattern].next_pattern_queued = pattern_id
