@@ -35,7 +35,6 @@ class: left, middle
 
 ![img](./title.jpeg)
 
-v0.0.0 
 
 ---
 
@@ -53,17 +52,15 @@ hopefully in an intuitive way
 
 ---
 
-# installation
+# install
 
-first download and then either
-
-open *kolor* in norns to use norns-grid:
+first download and then either (1) open the *kolor* script in norns to use norns-grid:
 
 <center>
 <img src="./norns.png" style="width:250px">
 </center>
 
-or add these lines to any norns script* to use with *the* grid:
+or (2) add these lines to any norns script\* to use with an actual grid:
 
 ```lua
 kolor = include("lib/kolor")
@@ -190,7 +187,7 @@ changing those probabilities gives different chaining behaviors
 
 ### you should know...
 
-there are ten mods:
+there are twelve mods:
 
 - volume (0 to 1)
 - rate (-200% to 200%)
@@ -203,10 +200,10 @@ there are ten mods:
 - retrig number (0 to 15 times)
 - probability (0 to 100%)
 - lfo lfo (0 to 64 beats)
+- delay send (0 to 100%)
+- delay length (1 to 16 beats)
 
-turn a mod on or off by pressing
-
-active mod blinks
+toggle mod scale by pressing active mod (blinking)
 
 ---
 
@@ -268,11 +265,15 @@ you can copy patterns, hold one pattern to copy and another to paste it to
 
 # thanks
 
-thanks so much
+@MUNINN for patiently debugging with grid
 
-@MUNINN for the most patient debugging on the gird
+@tyleretters for the beautiful lattice library and inspiration
+
+@license for supercollider help and inspiration
 
 ---
+
+# you should know
 
 you are exactly 
 
