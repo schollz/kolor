@@ -17,8 +17,6 @@ local effect_available = {
   	sample_start = {default={1,nil},value={}},
   	sample_end = {default={15,nil},value={}},
   	retrig = {default={1,nil},value={}},
-  	delay = {default={1,nil},value={}},
-  	reverb = {default={1,nil},value={}},
   	probability = {default={15,nil},value={}},
   	lfolfo = {default={1,nil},value={}},
   	delay = {default={1,nil},value={}},
@@ -48,8 +46,6 @@ for i=1,15 do
 	effect_available.sample_start.value[i]=(i-1)/14
 	effect_available.sample_end.value[i]=(i-1)/14
 	effect_available.retrig.value[i]=(i-1)
-	effect_available.delay.value[i]=(i-1)/14
-	effect_available.reverb.value[i]=(i-1)/14
 	effect_available.probability.value[i]=(i-1)/14
 	effect_available.lfolfo.value[i]=i
 	effect_available.delay.value[i]=(i-1)/14
@@ -325,7 +321,7 @@ function Kolor:new(args)
   o.grid_refresh:start()
 
   -- setup the parameter window
-	params:add_group("DRUMMY",3)
+	params:add_group("KOLOR",3)
   params:add_text('save_name_d',"save as...","")
   local name_folder=_path.data.."kolor/"
   params:set_action("save_name_d",function(y)
@@ -502,6 +498,8 @@ function Kolor:play_trig(i,effect,choke)
 	local sample_start = get_effect(effect,"sample_start")
 	local sample_end = get_effect(effect,"sample_end")
 	local retrig = get_effect(effect,"retrig")
+	local delay = get_effect(effect,"delay")
+	local feedback = get_effect(effect,"feedback")
 	local lfolfo = get_effect(effect,"lfolfo")
 	lfolfo[1] = lfo_freq(lfolfo[1]) -- lfo's lfo
 	-- if rate[1] < 0 then 
@@ -529,8 +527,8 @@ function Kolor:play_trig(i,effect,choke)
 		sample_start[1],sample_start[2],sample_start[3],sample_start[4],
 		sample_end[1],sample_end[2],sample_end[3],sample_end[4],
 		retrig[1],retrig[2],retrig[3],retrig[4],
-		0.5,0.5,0,0,
-		64,64,0,0,
+		delay[1],delay[2],delay[3],delay[4],
+		feedback[1],feedback[2],feedback[3],feedback[4],
 		lfolfo[1],i,clock.get_beat_sec())
 end
 
@@ -805,7 +803,7 @@ function Kolor:key_press(row,col,on)
 		self.selected_trig = nil
 		self.pressed_buttons_bar = on 
 		self:deselect()
-	elseif row == 6 and col >= 2 and col <= 13 and on then 
+	elseif row == 6 and col >= 2 and col <= 14 and on then 
 		self:press_effect(col-1)
 	elseif row == 8 and col == 16 and on then 
 		self:toggle_demo()

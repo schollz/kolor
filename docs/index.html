@@ -53,9 +53,15 @@ hopefully in an intuitive way
 
 # installation
 
-first download
+first download and then either
 
-then add these lines to any norns script*:
+open *kolor* in norns to use norns-grid:
+
+<center>
+<img src="./norns.png" style="width:250px">
+</center>
+
+or add these lines to any norns script*:
 
 ```lua
 kolor = include("lib/kolor")
@@ -83,6 +89,8 @@ kolor:new()
 *track* = collection of *steps*
 
 *pattern* = collection of *tracks* (up to six)
+
+also, the "beat scale" changes to a "parameter scale" when mod selected
 
 ---
 
@@ -131,6 +139,10 @@ samples are stereo `.wav` files stored in
 each bank shows 32 samples in alphabetical order
 
 each sound selects from its respective bank
+
+add your own
+
+they'll appear there too
 
 ---
 
@@ -228,10 +240,19 @@ this is the most menu diving you'll ever have to do
 ![img](./lfos.jpeg)
 
 
+---
 
---
+# save/load
 
-![img](./saveload.jpeg)
+saving and loading is done via the parameters menu
+
+`PARAMETERS -> KOLOR`
+
+<center>
+<img src="./saveload.png" style="width:300px">
+</center>
+
+_note:_ saving and loading might take up to 5 seconds
 
 ---
 
