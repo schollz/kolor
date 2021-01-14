@@ -406,7 +406,7 @@ function Kolor:grid_redraw()
 	  for row=1,rows do 
 	    for col=1,cols do 
 	      if gd[row][col] ~= 0 then 
-	      	self.g:led(row,col,gd[row][col])
+	      	self.g:led(col,row,gd[row][col])
 	      end
 	    end
 	  end
