@@ -1,6 +1,6 @@
-lattice = include("lib/lattice")
-graphic_pixels = include("lib/pixels")
-json = include("lib/json")
+lattice = include("kolor/lib/lattice")
+graphic_pixels = include("kolor/lib/pixels")
+json = include("kolor/lib/json")
 
 local Kolor = {}
 engine.name="Kolor"
