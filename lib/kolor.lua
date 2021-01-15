@@ -176,6 +176,7 @@ function Kolor:new(args)
   o.pressed_buttons = {}
   o.pressed_buttons_scale = {}
   o.choosing_division = false
+  o.show_quarter_note = 0
   o.selected_trig=nil
   o.effect_id_selected=0
   o.effect_stored = {}
@@ -437,6 +438,12 @@ function Kolor:emit_note(division)
 	if not self.is_playing then 
 		do return end 
 	end
+	if division == 4 then 
+		self.show_quarter_note = self.show_quarter_note + 4 
+		if self.show_quarter_note > 16 then 
+			self.show_quarter_note = 1 
+		end
+	end
 	-- calculate the start and end of current and next
 	-- beat for use with quantization
 	self.timers[division].time_last_beat = current_time()
@@ -634,6 +641,10 @@ function Kolor:get_visual()
 		for i=0,16 do 
 			if (i-1)%4 == 0 then 
 				self.visual[5][i]=6
+				-- show main beat
+				if self.show_quarter_note==i then 
+					self.visual[5][i] = 15 
+				end
 			elseif (i-1)%4 == 2 then 
 				self.visual[5][i]=3
 			else
@@ -1137,6 +1148,7 @@ function Kolor:press_play()
 	print("press_play")
 	if not self.is_playing then 
 		self.is_playing = true
+		self.show_quarter_note = 1
 		-- reset tracks
 		for i,_ in ipairs(self.pattern[self.current_pattern].track) do
 			self.pattern[self.current_pattern].track[i].pos = {1,0}
