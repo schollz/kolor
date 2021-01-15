@@ -22,7 +22,7 @@ engine.name="Kolor"
 
 function init()
   d = kolor:new()
-  d:demo()
+  --d:demo()
 
 
   clock.run(grid_redraw_clock) -- start the grid redraw clock
