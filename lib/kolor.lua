@@ -470,9 +470,8 @@ function Kolor:emit_note(division)
 				end
 				if self.pattern[self.current_pattern].next_pattern_queued > 0 then 
 					-- use manually cued
-					local next_pattern_queued =  self.pattern[self.current_pattern].next_pattern_queued
+					self.current_pattern =  self.pattern[self.current_pattern].next_pattern_queued
 					self.pattern[self.current_pattern].next_pattern_queued = 0
-					self.current_pattern = next_pattern_queued
 				else
 					-- use markov chains here to determine next queued pattern
 					local total_prob = 0 
@@ -920,12 +919,26 @@ end
 
 function Kolor:update_posmax(row,col)
 	self.pattern[self.current_pattern].track[self.track_current].pos_max = {row,col}
+	self:determine_longest_track()
+end
+
+function Kolor:determine_longest_track()
 	-- find new longest track 
 	longest_track = 1 
 	longest_track_value = 0
 	for i,track in ipairs(self.pattern[self.current_pattern].track) do 
+		local is_active = false 
+		for row,_ in ipairs(track.trig) do 
+			for col,_ in ipairs(track.trig[row]) do 
+				-- WORK
+				if track.trig[row][col].active then 
+					is_active = true 
+					break 
+				end
+			end
+		end
 		self.pattern[self.current_pattern].track[i].longest_track = false
-		if track.pos_max[1]*track.pos_max[2] > longest_track_value then 
+		if track.pos_max[1]*track.pos_max[2] > longest_track_value and is_active then 
 			longest_track = i 
 			longest_track_value = track.pos_max[1]*track.pos_max[2] 
 		end
@@ -961,6 +974,7 @@ function Kolor:press_pattern(pattern_id)
 	else
 		self.current_pattern = pattern_id
 	end
+	self:determine_longest_track()
 end
 
 function Kolor:deselect()
