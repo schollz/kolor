@@ -1171,7 +1171,7 @@ function Kolor:press_play()
 		end
 		self.is_playing = true
 		self.show_quarter_note = 1
-		self.lattice:resync()
+		self.lattice:hard_sync()
 	end
 end
 
