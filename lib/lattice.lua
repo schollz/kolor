@@ -79,6 +79,7 @@ function Lattice:hard_sync()
   for i, pattern in pairs(self.patterns) do
     self.patterns[i].phase = 0 
   end
+  self.transport = 0
   params:set("clock_reset",1)
   self:start()
 end
@@ -93,9 +94,9 @@ function Lattice:pulse()
         if pattern.phase > (pattern.division * ppm) then
           pattern.phase = pattern.phase - (pattern.division * ppm)
         end
-	if pattern.phase == 1 then
+	       if pattern.phase == 1 then
           pattern.action(self.transport)
-  	end
+      	end
       elseif pattern.flag then
         self.patterns[pattern.id] = nil
       end
