@@ -453,6 +453,9 @@ function Kolor:emit_note(division)
 	for i,t in ipairs(self.pattern[self.current_pattern].track) do 
 		-- make sure this track is in the right division
 		if t.division ~= division then goto continue end
+		if i== 1 then
+			print(clock.get_beats())
+		end
 		self.track_playing[i] = false 
 		self.pattern[self.current_pattern].track[i].pos[2] = self.pattern[self.current_pattern].track[i].pos[2] + 1
 		if self.pattern[self.current_pattern].track[i].pos[2] > self.pattern[self.current_pattern].track[i].pos_max[2] then 
@@ -1160,13 +1163,15 @@ end
 
 function Kolor:press_play()
 	print("press_play")
+	-- WORK
 	if not self.is_playing then 
-		self.is_playing = true
-		self.show_quarter_note = 1
 		-- reset tracks
 		for i,_ in ipairs(self.pattern[self.current_pattern].track) do
 			self.pattern[self.current_pattern].track[i].pos = {1,0}
 		end
+		self.is_playing = true
+		self.show_quarter_note = 1
+		self.lattice:resync()
 	end
 end
 
