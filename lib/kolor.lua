@@ -232,7 +232,7 @@ function Kolor:new(args)
   	for j=1,6 do 
 	  	o.pattern[i].track[j] = {
 	  		pos={1,1},
-	  		pos_max={4,16},
+	  		pos_max={1,16},
 	  		-- pos_max={4,16},
 	  		trig={},
 	  		longest_track=j==1,
@@ -515,9 +515,13 @@ function Kolor:emit_note(division)
 	end
 end
 
-function Kolor:play_trig(i,effect,choke)
+function Kolor:play_trig(i,effect,choke,off)
 	self.track_playing[i]=true
 	local volume = get_effect(effect,"volume")
+	if off ~= nil and off then 
+		volume[1] = 0 
+		volume[2] = 0
+	end
 	local rate = get_effect(effect,"rate")
 	if self.track_files[i].bpm ~= nil then
 		rate[1] = rate[1]*(clock.get_tempo()/self.track_files[i].bpm)
