@@ -236,7 +236,6 @@ function Kolor:new(args)
 	  		-- pos_max={4,16},
 	  		trig={},
 	  		longest_track=j==1,
-	  		filename="",
 	  		choke=j, -- choke group
 	  		division=16, -- which clock division (1-16)
 	  	}
@@ -283,12 +282,12 @@ function Kolor:new(args)
   -- TODO: LOAD USER FILE HERE BEFORE LOADING TRACK FILES
   -- if no user file, then load defaults
   for i=1,6 do 
-  	o.track_files[i] = o.track_files_available[i][1].filename
+  	o.track_files[i] = Kolor.get_filename_and_rate(o.track_files_available[i][1].filename)
   end
 
   -- load the filenames into each track
   for i=1,6 do 
-  	engine.kolorsample(i,o.track_files[i])
+  	engine.kolorsample(i,o.track_files[i].filename)
   end
 
   -- debouncing and blinking
@@ -388,7 +387,7 @@ function Kolor:load(filename)
 		self[k] = v
 	end	
   for i=1,6 do 
-  	engine.kolorsample(i,self.track_files[i])
+  	engine.kolorsample(i,self.track_files[i].filename)
   end
 end
 
@@ -453,9 +452,9 @@ function Kolor:emit_note(division)
 	for i,t in ipairs(self.pattern[self.current_pattern].track) do 
 		-- make sure this track is in the right division
 		if t.division ~= division then goto continue end
-		if i== 1 then
-			print(clock.get_beats())
-		end
+		-- if i== 1 then
+		-- 	print(clock.get_beats())
+		-- end
 		self.track_playing[i] = false 
 		self.pattern[self.current_pattern].track[i].pos[2] = self.pattern[self.current_pattern].track[i].pos[2] + 1
 		if self.pattern[self.current_pattern].track[i].pos[2] > self.pattern[self.current_pattern].track[i].pos_max[2] then 
@@ -520,6 +519,10 @@ function Kolor:play_trig(i,effect,choke)
 	self.track_playing[i]=true
 	local volume = get_effect(effect,"volume")
 	local rate = get_effect(effect,"rate")
+	if self.track_files[i].bpm ~= nil then
+		rate[1] = rate[1]*(clock.get_tempo()/self.track_files[i].bpm)
+		rate[2] = rate[2]*(clock.get_tempo()/self.track_files[i].bpm)
+	end
 	local pan = get_effect(effect,"pan")
 	local lpf = get_effect(effect,"lpf")
 	local resonance = get_effect(effect,"resonance")
@@ -1077,12 +1080,17 @@ function Kolor:press_effect(effect_id)
 	self:show_text(effect_order[effect_id],2)
 end
 
+function Kolor.get_filename_and_rate(filename)
+	return {filename=filename,bpm=tonumber(string.match(filename, 'bpm(%d*)'))}
+end
+
 function Kolor:press_demo_file(row,col)
 	print("press_demo_file "..row.." "..col)
 	for i, d in ipairs(self.track_files_available[self.track_current]) do 
 		if d.row == row and d.col == col then 
 			if d.loaded == false then 
-				print("loaded "..d.filename)
+				self.track_files[self.track_current] = Kolor.get_filename_and_rate(d.filename)
+				print("loaded track: "..json.encode(self.track_files[self.track_current]))
 				engine.kolorsample(self.track_current,d.filename)
 				for j, _ in ipairs(self.track_files_available[self.track_current]) do 
 					self.track_files_available[self.track_current][j].loaded = false 
@@ -1105,8 +1113,8 @@ function Kolor:toggle_demo()
 		self:show_text("bank")
 		for i=1,6 do 
 			for j,d in ipairs(self.track_files_available[i]) do 
-				print(i,self.track_files[i],d.filename,self.track_files[i] == d.filename)
-				self.track_files_available[i][j].loaded = self.track_files[i] == d.filename
+				print(i,self.track_files[i],d.filename,self.track_files[i].filename == d.filename)
+				self.track_files_available[i][j].loaded = self.track_files[i].filename == d.filename
 			end
 		end
 	end
@@ -1125,8 +1133,6 @@ function Kolor:press_track(track)
 		local division = self.pattern[self.current_pattern].track[track].division
 		local pos = self.pattern[self.current_pattern].track[track].pos
 		local next_pos = wrap_position({pos[1],pos[2]+1},self.pattern[self.current_pattern].track[track].pos_max)
-		tab.print(pos)
-		tab.print(next_pos)
 		if math.abs(t-self.timers[division].time_last_beat) > math.abs(t-self.timers[division].time_next_beat) then 
 			-- add to next position
 			pos = next_pos
