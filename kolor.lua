@@ -12,7 +12,14 @@
 -- K2 is left finger 
 -- K3 is right finger
 
-kolor = include("lib/kolor")
+kolor = include("kolor/lib/kolor")
+
+if util.file_exists("/home/we/dust/code/timi") then
+  timi = include("timi/lib/timi")
+  m = timi:new()
+  m:load(1,"/home/we/dust/code/timi/test.miti")
+  m:load(2,"/home/we/dust/code/timi/test2.miti")
+end
 d = nil 
 position={1,1}
 press_positions={{0,0},{0,0}}
@@ -22,8 +29,9 @@ engine.name="Kolor"
 
 function init()
   d = kolor:new()
-  --d:demo()
+  -- d:demo()
 
+  -- m:load(1,"/home/we/dust/code/timi/test.miti")
 
   clock.run(grid_redraw_clock) -- start the grid redraw clock
 end
@@ -49,6 +57,11 @@ end
 function key(k,z)
   if k>1 then 
     if z==1 then 
+      if util.file_exists("/home/we/dust/code/timi") then
+        if k==3 then 
+          m:toggle_play()
+        end
+      end
       press_positions[k-1] = {position[1],position[2]}
     end
     d:key_press(press_positions[k-1][1],press_positions[k-1][2],z==1)
