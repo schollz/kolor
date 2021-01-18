@@ -14,11 +14,11 @@
 
 kolor = include("kolor/lib/kolor")
 
--- if util.file_exists("/home/we/dust/code/timi") then
---   timi = include("timi/lib/timi")
---   m = timi:new()
---   m:load(1,"/home/we/dust/code/timi/test.miti")
---   m:load(2,"/home/we/dust/code/timi/test2.miti")
+-- if util.file_exists("/home/we/dust/code/tmi") then
+--   tmi = include("tmi/lib/tmi")
+--   m = tmi:new()
+--   m:load(1,"/home/we/dust/code/tmi/test.miti")
+--   m:load(2,"/home/we/dust/code/tmi/test2.miti")
 -- end
 d = nil 
 position={1,1}
@@ -55,7 +55,7 @@ end
 function key(k,z)
   if k>1 then 
     if z==1 then 
-      -- if util.file_exists("/home/we/dust/code/timi") then
+      -- if util.file_exists("/home/we/dust/code/tmi") then
       --   if k==3 then 
       --     m:toggle_play()
       --   end
