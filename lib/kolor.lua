@@ -1213,6 +1213,7 @@ function Kolor:press_trig(row,col,noselect)
 	if noselect == nil or noselect == false then
 		self.selected_trig = {row,col}
 	end
+	self:determine_longest_track()
 end
 
 

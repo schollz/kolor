@@ -14,12 +14,12 @@
 
 kolor = include("kolor/lib/kolor")
 
--- if util.file_exists("/home/we/dust/code/tmi") then
---   tmi = include("tmi/lib/tmi")
---   m = tmi:new()
---   m:load(1,"/home/we/dust/code/tmi/test.miti")
---   m:load(2,"/home/we/dust/code/tmi/test2.miti")
--- end
+if util.file_exists("/home/we/dust/code/tmi") then
+  tmi = include("tmi/lib/tmi")
+  m = tmi:new()
+  -- m:load(1,"/home/we/dust/code/tmi/chords2.tmi","chords")
+  -- m:load(2,"/home/we/dust/code/tmi/lead2.tmi","lead")
+end
 d = nil 
 position={1,1}
 press_positions={{0,0},{0,0}}
