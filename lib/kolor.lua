@@ -472,8 +472,9 @@ function Kolor:emit_note(division)
 				end
 				if self.pattern[self.current_pattern].next_pattern_queued > 0 then 
 					-- use manually cued
-					self.current_pattern =  self.pattern[self.current_pattern].next_pattern_queued
-					self.pattern[self.current_pattern].next_pattern_queued = 0
+					local current_pattern = self.current_pattern
+					self.current_pattern =  self.pattern[current_pattern].next_pattern_queued
+					self.pattern[current_pattern].next_pattern_queued = 0
 				else
 					-- use markov chains here to determine next queued pattern
 					local total_prob = 0 
