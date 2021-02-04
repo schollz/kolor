@@ -357,7 +357,7 @@ end
 
 function Kolor:show_text(text,time)
 	if time == nil then 
-		time = 3
+		time = 4
 	end
 	self.show_graphic = {text,time}
 end
@@ -1082,7 +1082,7 @@ function Kolor:press_effect(effect_id)
 		do return end 
 	end
 	self.effect_id_selected = effect_id
-	self:show_text(effect_order[effect_id],2)
+	self:show_text(effect_order[effect_id])
 end
 
 function Kolor.get_filename_and_rate(filename)
