@@ -827,25 +827,35 @@ function Kolor:get_visual()
     self.visual[tonumber(row)][tonumber(col)]=15
   end
 
-  -- WORK
+  -- change up the display if for 64-grid
   if self.grid64 then
     if not self.grid64_page_default then
       -- move everything from the right side to the left
       for row,_ in ipairs(self.visual) do
         for col,_ in ipairs(self.visual[row]) do
-		if col > 8 then
-			self.visual[row][col-8]=self.visual[row][col]
-		end
+          if col>8 then
+            self.visual[row][col-8]=self.visual[row][col]
+          end
         end
       end
     end
+    -- remove all the columsn > 8
+    for row,_ in ipairs(self.visual) do
+      for i=0,7 do
+        self.visual[row][16-i]=nil
+      end
+    end
   end
+
   return self.visual
 end
 
 -- update the state depending on what was pressed
 function Kolor:key_press(row,col,on)
-  -- print("key_press",row,col,on)
+  -- print("key_press",row,col,on/
+  if self.grid64 and not self.grid64_page_default then
+    col=col+8
+  end
   if on then
     self.pressed_buttons[row..","..col]=true
   else
@@ -901,7 +911,11 @@ function Kolor:key_press(row,col,on)
   elseif row==7 and col>=8 and col<=15 and on then
     self:press_chain_pattern(col-7)
   elseif row==7 and col>=8 and col<=15 and on then
-    self:press_chain_pattern(col-7)
+    if col==8 and self.grid64 then
+      self.grid64_page_default=not self.grid64_page_default
+    else
+      self:press_chain_pattern(col-7)
+    end
     -- elseif row==7 and col==16 and on then
     -- self:redo()
     -- elseif row==8 and col==16 and on then
