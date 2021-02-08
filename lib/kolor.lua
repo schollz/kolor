@@ -449,6 +449,7 @@ function Kolor:emit_note(division)
 	self.timers[division].time_next_beat = current_time() + (1/division)*clock.get_beat_sec()*4
 
 	-- check to see which tracks need to emit
+	local pattern_switched = false
 	for i,t in ipairs(self.pattern[self.current_pattern].track) do 
 		-- make sure this track is in the right division
 		if t.division ~= division then goto continue end
@@ -494,9 +495,19 @@ function Kolor:emit_note(division)
 					end
 				end
 				print("switched to pattern "..self.current_pattern)
-
+				pattern_switched = true 
 			end
 		end
+		if pattern_switched then 
+			break
+		end
+		::continue::
+	end
+	-- play the new note
+	for i,t in ipairs(self.pattern[self.current_pattern].track) do 
+		-- make sure this track is in the right division
+		if t.division ~= division then goto continue end
+
 		trig = self.pattern[self.current_pattern].track[i].trig[self.pattern[self.current_pattern].track[i].pos[1]][self.pattern[self.current_pattern].track[i].pos[2]]
 		if trig.active then 
 			if self.is_recording and self.effect_id_selected > 0 and i==self.track_current then 
@@ -938,13 +949,17 @@ function Kolor:determine_longest_track()
 	longest_track = 1 
 	longest_track_value = 0
 	for i,track in ipairs(self.pattern[self.current_pattern].track) do 
-		local is_active = false 
-		for row,_ in ipairs(track.trig) do 
-			for col,_ in ipairs(track.trig[row]) do 
-				-- WORK
-				if track.trig[row][col].active then 
-					is_active = true 
-					break 
+		local is_active = i==self.track_current
+		if not is_active then  
+			for row,_ in ipairs(track.trig) do 
+				for col,_ in ipairs(track.trig[row]) do 
+					if track.trig[row][col].active then 
+						is_active = true 
+						break 
+					end
+				end
+				if is_active then 
+					break
 				end
 			end
 		end
@@ -1147,6 +1162,9 @@ function Kolor:press_track(track)
 			self:press_trig(pos[1],pos[2],true)
 		end
 	end
+	clock.run(function()
+		self:determine_longest_track()
+	end)
 end
 
 function Kolor:press_mute_choke(track)
