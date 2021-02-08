@@ -220,6 +220,10 @@ function Kolor:new(args)
   o.track_files={}
   o.muted={false,false,false,false,false,false}
   o.pattern={}
+  local default_columns=16
+  if l.grid64 then
+    default_columns=8
+  end
   for i=1,8 do
     o.pattern[i]={}
     o.pattern[i].next_pattern_queued=i
@@ -234,7 +238,7 @@ function Kolor:new(args)
     for j=1,6 do
       o.pattern[i].track[j]={
         pos={1,1},
-        pos_max={1,16},
+        pos_max={4,default_columns},
         -- pos_max={4,16},
         trig={},
         longest_track=j==1,
