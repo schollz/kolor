@@ -611,7 +611,7 @@ function Kolor:get_visual()
     pixels=graphic_pixels.pixels(self.show_graphic[1])
     if pixels~=nil then
       for _,p in ipairs(pixels) do
-        self.visual[p[1]][p[2]]=p[3]
+        self.visual[p[1]][p[2]]=7
       end
       do return self.visual end
     end
