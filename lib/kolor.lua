@@ -5,7 +5,7 @@ json=include("kolor/lib/cjson")
 
 local Kolor={}
 
-local total_tracks = 12
+local total_tracks=12
 local effect_available={
   volume={default={8,nil},value={}},
   rate={default={12,nil},value={-2,-1.5,-1.25,-1,-0.75,-0.5,-0.25,0,0.25,0.5,0.75,1,1.25,1.5,2},lights={15,13,11,9,7,5,3,1,3,5,7,9,11,13,15}},
@@ -141,7 +141,7 @@ local function calculate_lfo(minval,maxval,minfreq,maxfreq,lfolfofreq)
 end
 
 local function current_ms()
-os.execute("date +%s%3N")
+  os.execute("date +%s%3N")
 
 end
 
@@ -172,7 +172,7 @@ function Kolor:new(args)
   end
   -- copy all the samples over
   for i=1,total_tracks do
-    if not util.file_exists(_path.audio.."kolor/bank"..i) then 
+    if not util.file_exists(_path.audio.."kolor/bank"..i) then
       os.execute("cp -r ".._path.code.."kolor/samples/bank"..i.." ".._path.audio.."kolor/")
     end
   end
@@ -248,7 +248,7 @@ function Kolor:new(args)
   o.track_files={}
   o.choke={}
   o.muted={}
-  for i=1,total_tracks do 
+  for i=1,total_tracks do
     table.insert(o.choke,i)
     table.insert(o.muted,false)
   end
@@ -688,7 +688,7 @@ function Kolor:get_visual()
   else
     -- show beats along the track
     for i=1,16 do
-      if self.visual[5][i] == 0 then 
+      if self.visual[5][i]==0 then
         if (i-1)%4==0 then
           self.visual[5][i]=10
           -- show main beat
@@ -698,8 +698,8 @@ function Kolor:get_visual()
             self.visual[5][i+2]=15
             self.visual[5][i+3]=15
           end
-        -- elseif (i-1)%4==2 then
-        --   self.visual[5][i]=4
+          -- elseif (i-1)%4==2 then
+          --   self.visual[5][i]=4
         else
           self.visual[5][i]=2
         end
@@ -799,46 +799,46 @@ function Kolor:get_visual()
   end
 
   -- illuminate tracks
-  -- or show choke groups if holding stop 
+  -- or show choke groups if holding stop
   -- or show mute groups if holding play
   if self.pressed_buttons["7,1"]~=nil then
-    if self.choke[self.track_current] > 0 then 
-      local row = 8 
-      local col = 1+self.choke[self.track_current]
-      if self.choke[self.track_current] > 6 then 
-        row = 7
-        col = 1+self.choke[self.track_current] - 6
+    if self.choke[self.track_current]>0 then
+      local row=8
+      local col=1+self.choke[self.track_current]
+      if self.choke[self.track_current]>6 then
+        row=7
+        col=1+self.choke[self.track_current]-6
       end
       self.visual[row][col]=7
     end
   else
     for i,track in ipairs(self.pattern[self.current_pattern].track) do
-      local row = 8 
-      local col = 1+i
-      if i > 6 then 
-        row = 7
-        col = 1+i-6
+      local row=8
+      local col=1+i
+      if i>6 then
+        row=7
+        col=1+i-6
       end
-      local brightness = 1 
-      if self.pressed_buttons["8,1"]~=nil then 
-        if self.muted[i] then 
-          brightness = 7
+      local brightness=1
+      if self.pressed_buttons["8,1"]~=nil then
+        if self.muted[i] then
+          brightness=7
         else
-          brightness = 0
+          brightness=0
         end
       else
-        if i==self.track_current then 
-          brightness = 4
+        if i==self.track_current then
+          brightness=4
         end
         if self.track_playing[i] and self.is_playing then
-          brightness = 15
+          brightness=15
         end
-        self.visual[row][col] = brightness
+        self.visual[row][col]=brightness
         if i==self.track_current then
-          brightness = brightness*self.blinky[6]
-        end 
+          brightness=brightness*self.blinky[6]
+        end
       end
-      self.visual[row][col] = brightness
+      self.visual[row][col]=brightness
     end
   end
 
@@ -915,8 +915,8 @@ function Kolor:key_press(row,col,on)
     self.pressed_lfo=not self.pressed_lfo
     if self.pressed_lfo then self:show_text("lfo") end
     if not self.pressed_lfo then self:show_text(effect_order[self.effect_id_selected]) end
-  elseif row==7 and (col==8 or col==16) and self.grid64 then 
-    if on then 
+  elseif row==7 and (col==8 or col==16) and self.grid64 then
+    if on then
       self.grid64_page_default=not self.grid64_page_default
     end
   elseif row==5 and self.choosing_division then
@@ -956,9 +956,9 @@ function Kolor:key_press(row,col,on)
   elseif row==8 and col==1 and on then
     self:press_play()
   elseif (row==8 or row==7) and col>=2 and col<=7 and on then
-    local tracknum = col-1
-    if row==7 then 
-      tracknum = tracknum + 6
+    local tracknum=col-1
+    if row==7 then
+      tracknum=tracknum+6
     end
     self:press_track(tracknum)
   elseif row==8 and col>=8 and col<=15 and on then
@@ -1068,10 +1068,10 @@ function Kolor:press_pattern(pattern_id)
         -- copy pattern
         other_id=col-7
         self:show_text("copied",5)
-	t1 = current_ms()
+        t1=current_ms()
         self.pattern[pattern_id].track[self.track_current]=json.decode(json.encode(self.pattern[other_id].track[self.track_current]))
         -- copy entire pattern
-	--self.pattern[pattern_id]=json.decode(json.encode(self.pattern[other_id]))
+        --self.pattern[pattern_id]=json.decode(json.encode(self.pattern[other_id]))
         print("copied pattern "..other_id.." to "..pattern_id.." in "..current_ms()-t1.."ms")
         do return end
       end
@@ -1226,19 +1226,19 @@ end
 function Kolor:press_track(track)
   print("press_track")
   -- WORK
-  -- change choke group if holding down stop 
-  if self.pressed_buttons["7,1"]  then 
-    if self.track_current == track then 
-      self.choke[self.track_current] = track - self.choke[self.track_current]
+  -- change choke group if holding down stop
+  if self.pressed_buttons["7,1"] then
+    if self.track_current==track then
+      self.choke[self.track_current]=track-self.choke[self.track_current]
     else
-      self.choke[self.track_current] = track 
+      self.choke[self.track_current]=track
     end
     print("updating choke of track "..self.track_current.." to "..self.choke[self.track_current])
     do return end
   end
   -- change mute if holding down play
-  if self.pressed_buttons["8,1"]  then 
-    self.muted[track] = not self.muted[track]
+  if self.pressed_buttons["8,1"] then
+    self.muted[track]=not self.muted[track]
     do return end
   end
 
