@@ -1,5 +1,6 @@
 lattice=include("kolor/lib/lattice")
-graphic_pixels=include("kolor/lib/pixels")
+--graphic_pixels=include("kolor/lib/pixels")
+graphic_pixels=include("kolor/lib/glyphs")
 --json=include("kolor/lib/json")
 json=include("kolor/lib/cjson")
 

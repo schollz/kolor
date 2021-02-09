@@ -10,6 +10,9 @@ local glyphs=json.decode(content)
 function Glyphs.pixels(name)
   pixels={}
   for i=1,#name do
+    if i==5 then
+      break
+    end
     letter=name:sub(i,i)
     for _,glyph in ipairs(glyphs) do
       if glyph.glyph==letter then
