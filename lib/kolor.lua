@@ -167,8 +167,22 @@ function Kolor:new(args)
   local o=setmetatable({},{__index=Kolor})
   local args=args==nil and {} or args
 
+  -- initiate the grid
+  -- grid specific
+  o.g=grid.connect()
+  o.g.key=function(x,y,z)
+    o:grid_key(x,y,z)
+  end
+  print("grid columns: "..o.g.cols)
+  -- grid refreshing
+  o.grid_refresh=metro.init()
+  o.grid_refresh.time=0.05
+  o.grid_refresh.event=function()
+    o:grid_redraw()
+  end
+
   -- setup state
-  o.grid64=true
+  o.grid64=o.g.cols==8
   o.grid64_page_default=true
   o.is_playing=false
   o.is_recording=false
@@ -221,7 +235,7 @@ function Kolor:new(args)
   o.muted={false,false,false,false,false,false}
   o.pattern={}
   local default_columns=16
-  if l.grid64 then
+  if o.grid64 then
     default_columns=8
   end
   for i=1,8 do
@@ -310,18 +324,8 @@ function Kolor:new(args)
   end
   o.debouncer:start()
 
-  -- initiate the grid
-  -- grid specific
-  o.g=grid.connect()
-  o.g.key=function(x,y,z)
-    o:grid_key(x,y,z)
-  end
-  -- grid refreshing
-  o.grid_refresh=metro.init()
-  o.grid_refresh.time=0.05
-  o.grid_refresh.event=function()
-    o:grid_redraw()
-  end
+
+  -- start grid
   o.grid_refresh:start()
 
   -- setup the parameter window
@@ -870,6 +874,10 @@ function Kolor:key_press(row,col,on)
     self.pressed_lfo=not self.pressed_lfo
     if self.pressed_lfo then self:show_text("lfo") end
     if not self.pressed_lfo then self:show_text(effect_order[self.effect_id_selected]) end
+  elseif row==7 and (col==8 or col==16) and self.grid64 then 
+    if on then 
+      self.grid64_page_default=not self.grid64_page_default
+    end
   elseif row==5 and self.choosing_division then
     if on then
       self:update_division(col)
@@ -915,11 +923,7 @@ function Kolor:key_press(row,col,on)
   elseif row==7 and col>=8 and col<=15 and on then
     self:press_chain_pattern(col-7)
   elseif row==7 and col>=8 and col<=15 and on then
-    if col==8 and self.grid64 then
-      self.grid64_page_default=not self.grid64_page_default
-    else
-      self:press_chain_pattern(col-7)
-    end
+    self:press_chain_pattern(col-7)
     -- elseif row==7 and col==16 and on then
     -- self:redo()
     -- elseif row==8 and col==16 and on then
