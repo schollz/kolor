@@ -158,8 +158,7 @@ function Kolor:new(args)
   end
   -- copy all the samples over
   for i=1,total_tracks do
-    local files = list_files(_path.audio.."kolor/bank"..i,{},false)
-    if #files < 2 then 
+    if not util.file_exists(_path.audio.."kolor/bank"..i) then 
       os.execute("cp -r ".._path.code.."kolor/samples/bank"..i.." ".._path.audio.."kolor/")
     end
   end
@@ -234,8 +233,10 @@ function Kolor:new(args)
   end
   o.track_files={}
   o.choke={}
+  o.muted={}
   for i=1,total_tracks do 
     table.insert(o.choke,i)
+    table.insert(o.muted,false)
   end
   o.pattern={}
   local default_columns=16
@@ -531,7 +532,7 @@ function Kolor:emit_note(division)
       local prob=get_effect(trig.effect,"probability")
       local lfolfo=get_effect(trig.effect,"lfolfo")
       local probability=calculate_lfo(prob[1],prob[2],prob[3],prob[4],lfolfo[1])
-      if self.choke[i]>0 and math.random()<probability then
+      if self.choke[i]>0 and not self.muted[i] and math.random()<probability then
         -- emit
         self:play_trig(i,trig.effect,self.choke[i])
       end
@@ -778,29 +779,48 @@ function Kolor:get_visual()
     end
   end
 
-  -- illuminate non-muted tracks, show if they are playing, blink if selected
-  for i,track in ipairs(self.pattern[self.current_pattern].track) do
-    local row = 8 
-    local col = 1+i
-    if i > 6 then 
-      row = 7
-      col = 1+i-6
+  -- illuminate tracks
+  -- or show choke groups if holding stop 
+  -- or show mute groups if holding play
+  if self.pressed_buttons["7,1"]~=nil then
+    if self.choke[self.track_current] > 0 then 
+      local row = 8 
+      local col = 1+self.choke[self.track_current]
+      if self.choke[self.track_current] > 6 then 
+        row = 7
+        col = 1+self.choke[self.track_current] - 6
+      end
+      self.visual[row][col]=7
     end
-    -- TODO: show choke groups if play button or stop button held
-    -- if self.pressed_buttons["7,1"]~=nil and i==self.track_current then -- show choke group when stop is pressed
-    -- end
-    local brightness = 1 
-    if i==self.track_current then 
-      brightness = 4
+  else
+    for i,track in ipairs(self.pattern[self.current_pattern].track) do
+      local row = 8 
+      local col = 1+i
+      if i > 6 then 
+        row = 7
+        col = 1+i-6
+      end
+      local brightness = 1 
+      if self.pressed_buttons["8,1"]~=nil then 
+        if self.muted[i] then 
+          brightness = 7
+        else
+          brightness = 0
+        end
+      else
+        if i==self.track_current then 
+          brightness = 4
+        end
+        if self.track_playing[i] and self.is_playing then
+          brightness = 15
+        end
+        self.visual[row][col] = brightness
+        if i==self.track_current then
+          brightness = brightness*self.blinky[6]
+        end 
+      end
+      self.visual[row][col] = brightness
     end
-    if self.track_playing[i] and self.is_playing then
-      brightness = 15
-    end
-    self.visual[row][col] = brightness
-    if i==self.track_current then
-      brightness = brightness*self.blinky[6]
-    end
-    self.visual[row][col] = brightness
   end
 
   -- illuminate patterns (active and not active)
@@ -1183,10 +1203,24 @@ end
 
 function Kolor:press_track(track)
   print("press_track")
-  -- TODO
-  -- change choke group if holding down stop or play
-    -- local stop_pressed=self.pressed_buttons["7,1"]
-  -- if stop_pressed==nil or not stop_pressed then
+  -- WORK
+  -- change choke group if holding down stop 
+  if self.pressed_buttons["7,1"]  then 
+    if self.track_current == track then 
+      self.choke[self.track_current] = track - self.choke[self.track_current]
+    else
+      self.choke[self.track_current] = track 
+    end
+    print("updating choke of track "..self.track_current.." to "..self.choke[self.track_current])
+    do return end
+  end
+  -- change mute if holding down play
+  if self.pressed_buttons["8,1"]  then 
+    self.muted[track] = not self.muted[track]
+    do return end
+  end
+
+
   if not self.is_recording then
     self:deselect()
   end
