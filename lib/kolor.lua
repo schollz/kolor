@@ -1,6 +1,7 @@
 lattice=include("kolor/lib/lattice")
 graphic_pixels=include("kolor/lib/pixels")
-json=include("kolor/lib/json")
+--json=include("kolor/lib/json")
+json=include("kolor/lib/cjson")
 
 local Kolor={}
 
