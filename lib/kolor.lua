@@ -192,7 +192,7 @@ function Kolor:new(args)
   o.pressed_buttons={}
   o.pressed_buttons_scale={}
   o.choosing_division=false
-  o.show_quarter_note=0
+  o.show_quarter_note=1-4
   o.selected_trig=nil
   o.effect_id_selected=0
   o.effect_stored={}
@@ -453,7 +453,7 @@ function Kolor:emit_note(division)
   end
   if division==4 then
     self.show_quarter_note=self.show_quarter_note+4
-    if self.show_quarter_note>16 then
+    if self.show_quarter_note==17 then
       self.show_quarter_note=1
     end
   end
@@ -673,17 +673,22 @@ function Kolor:get_visual()
     end
   else
     -- show beats along the track
-    for i=0,16 do
-      if (i-1)%4==0 then
-        self.visual[5][i]=6
-        -- show main beat
-        if self.show_quarter_note==i then
-          self.visual[5][i]=15
+    for i=1,16 do
+      if self.visual[5][i] == 0 then 
+        if (i-1)%4==0 then
+          self.visual[5][i]=10
+          -- show main beat
+          if self.show_quarter_note==i and self.is_playing then
+            self.visual[5][i]=15
+            self.visual[5][i+1]=15
+            self.visual[5][i+2]=15
+            self.visual[5][i+3]=15
+          end
+        -- elseif (i-1)%4==2 then
+        --   self.visual[5][i]=4
+        else
+          self.visual[5][i]=2
         end
-      elseif (i-1)%4==2 then
-        self.visual[5][i]=3
-      else
-        self.visual[5][i]=2
       end
     end
   end
@@ -709,13 +714,13 @@ function Kolor:get_visual()
     for row=1,4 do
       for col=1,16 do
         if row<=self.pattern[self.current_pattern].track[self.track_current].pos_max[1] and col<=self.pattern[self.current_pattern].track[self.track_current].pos_max[2] then
-          self.visual[row][col]=1
+          self.visual[row][col]=2
           if self.pattern[self.current_pattern].track[self.track_current].trig[row][col].active then
             -- determine the current effect and display the effect it
             if self.effect_id_selected>0 and self.pattern[self.current_pattern].track[self.track_current].trig[row][col].effect[effect_order[self.effect_id_selected]]~=nil then
               self.visual[row][col]=self.pattern[self.current_pattern].track[self.track_current].trig[row][col].effect[effect_order[self.effect_id_selected]].value[1]
-              if self.visual[row][col]<3 then
-                self.visual[row][col]=3
+              if self.visual[row][col]<5 then
+                self.visual[row][col]=5
               end
             else
               self.visual[row][col]=7
@@ -1267,7 +1272,7 @@ function Kolor:press_play()
       self.pattern[self.current_pattern].track[i].pos={1,0}
     end
     self.is_playing=true
-    self.show_quarter_note=1
+    self.show_quarter_note=1-4
     self.lattice:hard_sync()
   end
 end
