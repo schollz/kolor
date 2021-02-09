@@ -4,6 +4,7 @@ json=include("kolor/lib/json")
 
 local Kolor={}
 
+local total_tracks = 12
 local effect_available={
   volume={default={8,nil},value={}},
   rate={default={12,nil},value={-2,-1.5,-1.25,-1,-0.75,-0.5,-0.25,0,0.25,0.5,0.75,1,1.25,1.5,2},lights={15,13,11,9,7,5,3,1,3,5,7,9,11,13,15}},
@@ -152,13 +153,13 @@ end
 --- instantiate a new kolor
 function Kolor:new(args)
   -- setup sample folders
-  for i=1,6 do
+  for i=1,total_tracks do
     os.execute("mkdir -p ".._path.audio.."kolor/bank"..i)
   end
   -- copy all the samples over
-  if not util.file_exists(_path.audio.."kolor/silence.wav") then
-    os.execute("cp ".._path.code.."kolor/samples/silence.wav ".._path.audio.."kolor/silence.wav")
-    for i=1,6 do
+  for i=1,total_tracks do
+    local files = list_files(_path.audio.."kolor/bank"..i,{},false)
+    if #files < 2 then 
       os.execute("cp -r ".._path.code.."kolor/samples/bank"..i.." ".._path.audio.."kolor/")
     end
   end
@@ -196,7 +197,7 @@ function Kolor:new(args)
   o.selected_trig=nil
   o.effect_id_selected=0
   o.effect_stored={}
-  for i=1,6 do
+  for i=1,total_tracks do
     o.effect_stored[i]={}
     for k,e in pairs(effect_available) do
       o.effect_stored[i][k]={value=e.default,lfo={1,nil}}
@@ -211,10 +212,10 @@ function Kolor:new(args)
   end
   o.current_pattern=1
   o.track_current=1
-  o.track_playing={false,false,false,false,false,false}
+  o.track_playing={false,false,false,false,false,false,false,false,false,false,false,false}
   o.demo_mode=false
   o.track_files_available={}
-  for i=1,6 do
+  for i=1,total_tracks do
     local filelist=list_files(_path.audio.."kolor/bank"..i,{},true)
     o.track_files_available[i]={}
     local row=1
@@ -232,7 +233,10 @@ function Kolor:new(args)
     end
   end
   o.track_files={}
-  o.muted={false,false,false,false,false,false}
+  o.choke={}
+  for i=1,total_tracks do 
+    table.insert(o.choke,i)
+  end
   o.pattern={}
   local default_columns=16
   if o.grid64 then
@@ -249,14 +253,13 @@ function Kolor:new(args)
       end
     end
     o.pattern[i].track={}
-    for j=1,6 do
+    for j=1,total_tracks do
       o.pattern[i].track[j]={
         pos={1,1},
         pos_max={4,default_columns},
         -- pos_max={4,16},
         trig={},
         longest_track=j==1,
-        choke=j,-- choke group
         division=16,-- which clock division (1-16)
       }
       -- fill in default trigs
@@ -301,12 +304,12 @@ function Kolor:new(args)
 
   -- TODO: LOAD USER FILE HERE BEFORE LOADING TRACK FILES
   -- if no user file, then load defaults
-  for i=1,6 do
+  for i=1,total_tracks do
     o.track_files[i]=Kolor.get_filename_and_rate(o.track_files_available[i][1].filename)
   end
 
   -- load the filenames into each track
-  for i=1,6 do
+  for i=1,total_tracks do
     engine.kolorsample(i,o.track_files[i].filename)
   end
 
@@ -396,7 +399,7 @@ function Kolor:load(filename)
   for k,v in pairs(data) do
     self[k]=v
   end
-  for i=1,6 do
+  for i=1,total_tracks do
     engine.kolorsample(i,self.track_files[i].filename)
   end
 end
@@ -528,9 +531,9 @@ function Kolor:emit_note(division)
       local prob=get_effect(trig.effect,"probability")
       local lfolfo=get_effect(trig.effect,"lfolfo")
       local probability=calculate_lfo(prob[1],prob[2],prob[3],prob[4],lfolfo[1])
-      if not self.muted[i] and math.random()<probability then
+      if self.choke[i]>0 and math.random()<probability then
         -- emit
-        self:play_trig(i,trig.effect,self.pattern[self.current_pattern].track[i].choke)
+        self:play_trig(i,trig.effect,self.choke[i])
       end
     end
     ::continue::
@@ -777,28 +780,27 @@ function Kolor:get_visual()
 
   -- illuminate non-muted tracks, show if they are playing, blink if selected
   for i,track in ipairs(self.pattern[self.current_pattern].track) do
-    if not self.muted[i] then
-      self.visual[8][i+1]=1
-      if i==self.track_current then
-        self.visual[8][i+1]=4
-      end
-      if self.track_playing[i] and self.is_playing then
-        self.visual[8][i+1]=15
-      end
-    else
-      self.visual[8][i+1]=1
-      self.visual[7][i+1]=15
+    local row = 8 
+    local col = 1+i
+    if i > 6 then 
+      row = 7
+      col = 1+i-6
     end
+    -- TODO: show choke groups if play button or stop button held
+    -- if self.pressed_buttons["7,1"]~=nil and i==self.track_current then -- show choke group when stop is pressed
+    -- end
+    local brightness = 1 
+    if i==self.track_current then 
+      brightness = 4
+    end
+    if self.track_playing[i] and self.is_playing then
+      brightness = 15
+    end
+    self.visual[row][col] = brightness
     if i==self.track_current then
-      self.visual[8][i+1]=self.visual[8][i+1]*self.blinky[6]
+      brightness = brightness*self.blinky[6]
     end
-    if self.pressed_buttons["7,1"]~=nil and i==self.track_current then -- show choke group when stop is pressed
-      -- turn off mutes
-      for j=1,6 do
-        self.visual[7][j+1]=0
-      end
-      self.visual[7][track.choke+1]=15
-    end
+    self.visual[row][col] = brightness
   end
 
   -- illuminate patterns (active and not active)
@@ -914,10 +916,12 @@ function Kolor:key_press(row,col,on)
     self:press_stop()
   elseif row==8 and col==1 and on then
     self:press_play()
-  elseif row==8 and col>=2 and col<=7 and on then
-    self:press_track(col-1)
-  elseif row==7 and col>=2 and col<=7 and on then
-    self:press_mute_choke(col-1)
+  elseif (row==8 or row==7) and col>=2 and col<=7 and on then
+    local tracknum = col-1
+    if row==7 then 
+      tracknum = tracknum + 6
+    end
+    self:press_track(tracknum)
   elseif row==8 and col>=8 and col<=15 and on then
     self:press_pattern(col-7)
   elseif row==7 and col>=8 and col<=15 and on then
@@ -1154,7 +1158,7 @@ function Kolor:press_demo_file(row,col)
         end
         self.track_files_available[self.track_current][i].loaded=true
       else
-        self:play_trig(self.track_current,self.effect_stored[self.track_current],self.pattern[self.current_pattern].track[self.track_current].choke)
+        self:play_trig(self.track_current,self.effect_stored[self.track_current],self.choke[self.track_current])
       end
       break
     end
@@ -1168,7 +1172,7 @@ function Kolor:toggle_demo()
   -- determine which of the current tracks is already loaded
   if self.demo_mode then
     self:show_text("bank")
-    for i=1,6 do
+    for i=1,total_tracks do
       for j,d in ipairs(self.track_files_available[i]) do
         print(i,self.track_files[i],d.filename,self.track_files[i].filename==d.filename)
         self.track_files_available[i][j].loaded=self.track_files[i].filename==d.filename
@@ -1179,11 +1183,15 @@ end
 
 function Kolor:press_track(track)
   print("press_track")
+  -- TODO
+  -- change choke group if holding down stop or play
+    -- local stop_pressed=self.pressed_buttons["7,1"]
+  -- if stop_pressed==nil or not stop_pressed then
   if not self.is_recording then
     self:deselect()
   end
   self.track_current=track
-  self:play_trig(track,self.effect_stored[self.track_current],self.pattern[self.current_pattern].track[track].choke)
+  self:play_trig(track,self.effect_stored[self.track_current],self.choke[track])
   if self.is_playing and self.is_recording then
     -- add sample to track in quantized position
     local t=current_time()
@@ -1204,17 +1212,6 @@ function Kolor:press_track(track)
   end)
 end
 
-function Kolor:press_mute_choke(track)
-  -- if stop button is pressed, set the choke
-  local stop_pressed=self.pressed_buttons["7,1"]
-  if stop_pressed==nil or not stop_pressed then
-    -- mute
-    self.muted[track]=not self.muted[track]
-  else
-    -- change choke pattern for currently selected track
-    self.pattern[self.current_pattern].track[self.track_current].choke=track
-  end
-end
 
 function Kolor:press_rec()
   print("press_rec")
