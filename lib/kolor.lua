@@ -51,6 +51,14 @@ for i=1,15 do
   effect_available.feedback.value[i]=(i-1)/14*128
 end
 
+local function current_ms()
+  cmd="date +%s%3N"
+  local handle=io.popen(cmd)
+  local result=handle:read("*a")
+  handle:close()
+  return tonumber(result)
+end
+
 local function deepcopy(orig)
   return {table.unpack(orig)}
 end
@@ -130,6 +138,11 @@ end
 local function calculate_lfo(minval,maxval,minfreq,maxfreq,lfolfofreq)
   local freq=(math.sin(current_time()*2*3.14159*lfolfofreq))*(maxfreq-minfreq)/2+(maxfreq+minfreq)/2
   return (math.sin(current_time()*2*3.14159*freq))*(maxval-minval)/2+(maxval+minval)/2
+end
+
+local function current_ms()
+os.execute("date +%s%3N")
+
 end
 
 local function get_effect(effect,effectname)
@@ -1054,9 +1067,12 @@ function Kolor:press_pattern(pattern_id)
       if self.pressed_buttons["8,"..col]==true then
         -- copy pattern
         other_id=col-7
-        print("copying pattern "..other_id.." to "..pattern_id)
         self:show_text("copied",5)
+	t1 = current_ms()
         self.pattern[pattern_id].track[self.track_current]=json.decode(json.encode(self.pattern[other_id].track[self.track_current]))
+        -- copy entire pattern
+	--self.pattern[pattern_id]=json.decode(json.encode(self.pattern[other_id]))
+        print("copied pattern "..other_id.." to "..pattern_id.." in "..current_ms()-t1.."ms")
         do return end
       end
     end
