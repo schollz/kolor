@@ -1,5 +1,5 @@
 local Glyphs={}
-
+local json=require "cjson"
 local f=io.open(_path.code.."kolor/lib/glyphs.json","rb")
 local content=f:read("*all")
 f:close()
@@ -17,7 +17,7 @@ function Glyphs.pixels(name)
     for _,glyph in ipairs(glyphs) do
       if glyph.glyph==letter then
         for _,position in ipairs(glyph.positions) do
-          table.insert(pixels,{position.x+(i-1)*4+1,position.y+1,15})
+          table.insert(pixels,{position.y+1,position.x+(i-1)*4+1,15})
         end
         break
       end

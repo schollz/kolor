@@ -1,8 +1,12 @@
-lattice=include("kolor/lib/lattice")
+print(_VERSION)
+if not string.find(package.path,"/home/we/dust/code/kolor/lib/") then 
+  package.path = package.path .. ";/home/we/dust/code/kolor/lib/"
+end
+local json=require("cjson")
+local lattice=include("kolor/lib/lattice")
 --graphic_pixels=include("kolor/lib/pixels")
-graphic_pixels=include("kolor/lib/glyphs")
+local graphic_pixels=include("kolor/lib/glyphs")
 --json=include("kolor/lib/json")
-json=include("kolor/lib/cjson")
 
 local Kolor={}
 
@@ -37,6 +41,21 @@ local effect_order={
   "lfolfo",
   "delay",
   "feedback",
+}
+local effect_name={
+  "volume",
+  "rate",
+  "pan",
+  "LPF",
+  "resonance",
+  "HPF",
+  "strt",
+  "end",
+  "retrig",
+  "probability",
+  "LFO2",
+  "dly",
+  "fdbk",
 }
 for i=1,15 do
   effect_available.volume.value[i]=(i-1)/14
@@ -624,18 +643,6 @@ function Kolor:get_visual()
     end
   end
 
-  -- show graphic, hijacks everything!
-  if self.show_graphic[2]>0 then
-    -- d.show_graphic={"lfo",3}
-    pixels=graphic_pixels.pixels(self.show_graphic[1])
-    if pixels~=nil then
-      for _,p in ipairs(pixels) do
-        self.visual[p[1]][p[2]]=7
-      end
-      do return self.visual end
-    end
-  end
-
   -- draw bar gradient / scale / lfo scale
   if self.effect_id_selected>0 then
     -- if trig is selected, then show the current value
@@ -708,7 +715,16 @@ function Kolor:get_visual()
     end
   end
 
-  if self.demo_mode then
+  -- show graphic, hijacks everything!
+  if self.show_graphic[2]>0 then
+    -- d.show_graphic={"lfo",3}
+    pixels=graphic_pixels.pixels(self.show_graphic[1])
+    if pixels~=nil then
+      for _,p in ipairs(pixels) do
+        self.visual[p[1]][p[2]]=7
+      end
+    end
+  elseif self.demo_mode then
     -- show demo demo files instead of triggers
     for _,d in ipairs(self.track_files_available[self.track_current]) do
       self.visual[d.row][d.col]=4
@@ -914,8 +930,8 @@ function Kolor:key_press(row,col,on)
 
   if row==5 and col==1 and self.effect_id_selected>0 and on then
     self.pressed_lfo=not self.pressed_lfo
-    if self.pressed_lfo then self:show_text("lfo") end
-    if not self.pressed_lfo then self:show_text(effect_order[self.effect_id_selected]) end
+    if self.pressed_lfo then self:show_text("LFO") end
+    if not self.pressed_lfo then self:show_text(effect_name[self.effect_id_selected]) end
   elseif row==7 and (col==8 or col==16) and self.grid64 then
     if on then
       self.grid64_page_default=not self.grid64_page_default
@@ -1181,7 +1197,7 @@ function Kolor:press_effect(effect_id)
     do return end
   end
   self.effect_id_selected=effect_id
-  self:show_text(effect_order[effect_id])
+  self:show_text(effect_name[effect_id])
 end
 
 function Kolor.get_filename_and_rate(filename)
