@@ -17,8 +17,8 @@ kolor=include("kolor/lib/kolor")
 if util.file_exists("/home/we/dust/code/tmi") then
   tmi=include("tmi/lib/tmi")
   m=tmi:new()
-  -- m:load("plinky","/home/we/dust/data/tmi/maya.tmi",1)
-  -- m:load("plinky","/home/we/dust/data/tmi/mayabass",2)
+  --m:load("plinky","/home/we/dust/data/tmi/maya.tmi",1)
+  --m:load("plinky","/home/we/dust/data/tmi/mayabass",2)
 end
 d=nil
 position={1,1}

@@ -1,6 +1,7 @@
 print(_VERSION)
-if not string.find(package.path,"/home/we/dust/code/kolor/lib/") then 
-  package.path = package.path .. ";/home/we/dust/code/kolor/lib/"
+print(package.cpath)
+if not string.find(package.cpath,"/home/we/dust/code/kolor/lib/") then 
+  package.cpath = package.cpath .. ";/home/we/dust/code/kolor/lib/?.so"
 end
 local json=require("cjson")
 local lattice=include("kolor/lib/lattice")
