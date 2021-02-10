@@ -25,7 +25,7 @@ i'm totally open to ideas to remove these limitations or improve in general.
 ## requirements
 
 - norns
-- grid (optional, but recommended)
+- 128- or 64-grid (grid is optional, but recommended)
 
 ## documentation
 
