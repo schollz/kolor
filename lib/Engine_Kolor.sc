@@ -4,8 +4,8 @@
 Engine_Kolor : CroneEngine {
 
 	// Kolor specific
-	var sampleBuff;
-	var samplerPlayer;
+	var sampleBuffKolor;
+	var samplePlayerKolor;
 	// Kolor ^
 
 	*new { arg context, doneCallback;
@@ -14,11 +14,12 @@ Engine_Kolor : CroneEngine {
 
 	alloc {
 
-		sampleBuff = Array.fill(6, { arg i; 
+		// Kolor specific
+		sampleBuffKolor = Array.fill(12, { arg i; 
 			Buffer.read(context.server, "/home/we/dust/code/kolor/samples/silence.wav"); 
 		});
 
-		(0..6).do({arg i; 
+		(0..12).do({arg i; 
 			SynthDef("player"++i,{ arg sampleBufnum=0, t_trig=0, lfolfo=0.0, currentTime=0.0, 
 				ampMin=0.0, ampMax=0.0, ampLFOMin=0.0, ampLFOMax=0.0, 
 				rateMin=1.0, rateMax=1.0, rateLFOMin=0.0, rateLFOMax=0.0,
@@ -116,19 +117,19 @@ Engine_Kolor : CroneEngine {
 			}).add;	
 		});
 
-		samplerPlayer = Array.fill(6,{arg i;
-			Synth("player"++i,[\bufnum:sampleBuff[i]], target:context.xg);
+		samplePlayerKolor = Array.fill(12,{arg i;
+			Synth("player"++i,[\bufnum:sampleBuffKolor[i]], target:context.xg);
 		});
 
 		this.addCommand("kolorsample","is", { arg msg;
 			// lua is sending 1-index
-			sampleBuff[msg[1]-1].free;
-			sampleBuff[msg[1]-1] = Buffer.read(context.server,msg[2]);
+			sampleBuffKolor[msg[1]-1].free;
+			sampleBuffKolor[msg[1]-1] = Buffer.read(context.server,msg[2]);
 		});
 
 		this.addCommand("kolorplay","iffffffffffffffffffffffffffffffffffffffffffffffff", { arg msg;
 			// lua is sending 1-index
-			samplerPlayer[msg[1]-1].set(
+			samplePlayerKolor[msg[1]-1].set(
 				\t_trig,1,
 				\currentTime, msg[2],
 				\ampMin,msg[3],\ampMax,msg[4],\ampLFOMin,msg[5],\ampLFOMax,msg[6],
@@ -143,16 +144,18 @@ Engine_Kolor : CroneEngine {
 				\delaySendMin,msg[39],\delaySendMax,msg[40],\delaySendLFOMin,msg[41],\delaySendLFOMax,msg[42],
 				\delayFeedbackMin,msg[43],\delayFeedbackMax,msg[44],\delayFeedbackLFOMin,msg[45],\delayFeedbackLFOMax,msg[46],
 				\lfolfo,msg[47],
-				\sampleBufnum,sampleBuff[msg[48]-1],
+				\sampleBufnum,sampleBuffKolor[msg[48]-1],
 				\secondsPerBeat,msg[49],
 				\t_gate,1
 			);
 		});
-
+		// Kolor ^
 	}
 
 	free {
-		(0..5).do({arg i; sampleBuff[i].free});
-		(0..5).do({arg i; samplerPlayer[i].free});
+		// Kolor specific
+		(0..11).do({arg i; sampleBuffKolor[i].free});
+		(0..11).do({arg i; samplePlayerKolor[i].free});
+		// Kolor ^
 	}
 }
