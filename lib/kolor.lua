@@ -72,7 +72,7 @@ for i=1,15 do
 end
 
 local function current_ms()
-  cmd="date +%s%3N"
+  cmd="date +%s%3N 2>&1"
   local handle=io.popen(cmd)
   local result=handle:read("*a")
   handle:close()
@@ -718,10 +718,15 @@ function Kolor:get_visual()
   -- show graphic, hijacks everything!
   if self.show_graphic[2]>0 then
     -- d.show_graphic={"lfo",3}
+    for row=1,5 do
+      for col=1,16 do
+        self.visual[row][col]=2
+      end
+    end
     pixels=graphic_pixels.pixels(self.show_graphic[1])
     if pixels~=nil then
       for _,p in ipairs(pixels) do
-        self.visual[p[1]][p[2]]=7
+        self.visual[p[1]][p[2]]=12
       end
     end
   elseif self.demo_mode then
@@ -1086,10 +1091,10 @@ function Kolor:press_pattern(pattern_id)
         other_id=col-7
         self:show_text("copied",5)
         t1=current_ms()
-        self.pattern[pattern_id].track[self.track_current]=json.decode(json.encode(self.pattern[other_id].track[self.track_current]))
+        -- self.pattern[pattern_id].track[self.track_current]=json.decode(json.encode(self.pattern[other_id].track[self.track_current]))
         -- copy entire pattern
-        --self.pattern[pattern_id]=json.decode(json.encode(self.pattern[other_id]))
-        print("copied pattern "..other_id.." to "..pattern_id.." in "..current_ms()-t1.."ms")
+        self.pattern[pattern_id]=json.decode(json.encode(self.pattern[other_id]))
+        print("copied pattern "..other_id.." to "..pattern_id)
         do return end
       end
     end
