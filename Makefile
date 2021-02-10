@@ -11,3 +11,6 @@ lib/cjson.so:
 
 clean:
 	rm lib/cjson.so
+
+prereqs:
+	apt install liblua5.3-dev
