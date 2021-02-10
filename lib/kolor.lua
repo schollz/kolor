@@ -188,13 +188,13 @@ end
 --- instantiate a new kolor
 function Kolor:new(args)
   -- setup sample folders
-  for i=1,total_tracks do
-    os.execute("mkdir -p ".._path.audio.."kolor/bank"..i)
-  end
+  os.execute("mkdir -p ".._path.audio.."kolor/")
   -- copy all the samples over
   for i=1,total_tracks do
     if not util.file_exists(_path.audio.."kolor/bank"..i) then
-      os.execute("cp -r ".._path.code.."kolor/samples/bank"..i.." ".._path.audio.."kolor/")
+      local cmd = "cp -r ".._path.code.."kolor/samples/bank"..i.." ".._path.audio.."kolor/"
+      print(cmd)
+      os.execute(cmd)
     end
   end
 
@@ -1236,10 +1236,10 @@ function Kolor:toggle_demo()
   self.demo_mode=not self.demo_mode
   -- determine which of the current tracks is already loaded
   if self.demo_mode then
-    self:show_text("bank")
+    self:show_text("BANK")
     for i=1,total_tracks do
       for j,d in ipairs(self.track_files_available[i]) do
-        print(i,self.track_files[i],d.filename,self.track_files[i].filename==d.filename)
+        -- print(i,self.track_files[i],d.filename,self.track_files[i].filename==d.filename)
         self.track_files_available[i][j].loaded=self.track_files[i].filename==d.filename
       end
     end
