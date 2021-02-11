@@ -57,7 +57,7 @@ function key(k,z)
     if z==1 then
       if util.file_exists("/home/we/dust/code/tmi") then
         if k==3 then
-          m:toggle_play()
+          --m:toggle_play()
         end
       end
       press_positions[k-1]={position[1],position[2]}

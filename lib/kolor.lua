@@ -1270,7 +1270,7 @@ function Kolor:press_track(track)
     local j=track
     for row=1,4 do
       for col=1,16 do
-        o.pattern[i].track[j].trig[row][col]={
+        self.pattern[i].track[j].trig[row][col]={
           playing=false,
           selected=false,
           held=0,
@@ -1278,8 +1278,8 @@ function Kolor:press_track(track)
           pressed=false,
           effect={},
         }
-        for k,v in pairs(o.effect_stored[j]) do
-          o.pattern[i].track[j].trig[row][col].effect[k]={value={v.value[1],v.value[2]},lfo={v.lfo[1],v.lfo[2]}}
+        for k,v in pairs(self.effect_stored[j]) do
+          self.pattern[i].track[j].trig[row][col].effect[k]={value={v.value[1],v.value[2]},lfo={v.lfo[1],v.lfo[2]}}
         end
       end
     end
