@@ -1,7 +1,7 @@
 print(_VERSION)
 print(package.cpath)
-if not string.find(package.cpath,"/home/we/dust/code/kolor/lib/") then 
-  package.cpath = package.cpath .. ";/home/we/dust/code/kolor/lib/?.so"
+if not string.find(package.cpath,"/home/we/dust/code/kolor/lib/") then
+  package.cpath=package.cpath..";/home/we/dust/code/kolor/lib/?.so"
 end
 local json=require("cjson")
 local lattice=include("kolor/lib/lattice")
@@ -192,7 +192,7 @@ function Kolor:new(args)
   -- copy all the samples over
   for i=1,total_tracks do
     if not util.file_exists(_path.audio.."kolor/bank"..i) then
-      local cmd = "cp -r ".._path.code.."kolor/samples/bank"..i.." ".._path.audio.."kolor/"
+      local cmd="cp -r ".._path.code.."kolor/samples/bank"..i.." ".._path.audio.."kolor/"
       print(cmd)
       os.execute(cmd)
     end
@@ -1248,7 +1248,6 @@ end
 
 function Kolor:press_track(track)
   print("press_track")
-  -- WORK
   -- change choke group if holding down stop
   if self.pressed_buttons["7,1"] then
     if self.track_current==track then
@@ -1264,7 +1263,28 @@ function Kolor:press_track(track)
     self.muted[track]=not self.muted[track]
     do return end
   end
-
+  -- WORK
+  -- erase track if holding down record
+  if self.pressed_buttons["6,1"] then
+    local i=self.current_pattern
+    local j=track
+    for row=1,4 do
+      for col=1,16 do
+        o.pattern[i].track[j].trig[row][col]={
+          playing=false,
+          selected=false,
+          held=0,
+          active=false,
+          pressed=false,
+          effect={},
+        }
+        for k,v in pairs(o.effect_stored[j]) do
+          o.pattern[i].track[j].trig[row][col].effect[k]={value={v.value[1],v.value[2]},lfo={v.lfo[1],v.lfo[2]}}
+        end
+      end
+    end
+    do return end
+  end
 
   if not self.is_recording then
     self:deselect()
@@ -1305,7 +1325,6 @@ end
 
 function Kolor:press_play()
   print("press_play")
-  -- WORK
   if not self.is_playing then
     -- reset tracks
     for i,_ in ipairs(self.pattern[self.current_pattern].track) do

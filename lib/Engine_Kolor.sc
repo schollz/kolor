@@ -3,7 +3,7 @@
 // Inherit methods from CroneEngine
 Engine_Kolor : CroneEngine {
 
-	// Kolor specific
+	// Kolor specific v0.1.0
 	var sampleBuffKolor;
 	var samplePlayerKolor;
 	// Kolor ^
@@ -14,7 +14,7 @@ Engine_Kolor : CroneEngine {
 
 	alloc {
 
-		// Kolor specific
+		// Kolor specific v0.1.0
 		sampleBuffKolor = Array.fill(12, { arg i; 
 			Buffer.read(context.server, "/home/we/dust/code/kolor/samples/silence.wav"); 
 		});
@@ -153,7 +153,7 @@ Engine_Kolor : CroneEngine {
 	}
 
 	free {
-		// Kolor specific
+		// Kolor specific 0.1.0
 		(0..11).do({arg i; sampleBuffKolor[i].free});
 		(0..11).do({arg i; samplePlayerKolor[i].free});
 		// Kolor ^
