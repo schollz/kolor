@@ -201,19 +201,24 @@ function Kolor:new(args)
   -- setup object
   local o=setmetatable({},{__index=Kolor})
   local args=args==nil and {} or args
+  o.grid_on = args.grid_on == nil and true or args.grid_on
 
   -- initiate the grid
   -- grid specific
   o.g=grid.connect()
   o.g.key=function(x,y,z)
-    o:grid_key(x,y,z)
+    if o.grid_on then
+      o:grid_key(x,y,z)
+    end
   end
   print("grid columns: "..o.g.cols)
   -- grid refreshing
   o.grid_refresh=metro.init()
   o.grid_refresh.time=0.05
   o.grid_refresh.event=function()
-    o:grid_redraw()
+    if o.grid_on then
+      o:grid_redraw()
+    end
   end
 
   -- setup state
@@ -402,6 +407,14 @@ function Kolor:new(args)
 
 
   return o
+end
+
+function Kolor:toggle_grid(on)
+  if on == nil then
+    self.grid_on = not self.grid_on 
+  else
+    self.grid_on = on 
+  end
 end
 
 function Kolor:show_text(text,time)
