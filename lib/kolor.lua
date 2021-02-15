@@ -202,6 +202,7 @@ function Kolor:new(args)
   local o=setmetatable({},{__index=Kolor})
   local args=args==nil and {} or args
   o.grid_on = args.grid_on == nil and true or args.grid_on
+  o.toggle_callback = args.toggle_callback 
 
   -- initiate the grid
   -- grid specific
@@ -223,6 +224,7 @@ function Kolor:new(args)
   end
 
   -- setup state
+  o.kill_timer = 0
   o.grid64=o.g.cols==8
   o.grid64_page_default=true
   o.is_playing=false
@@ -423,6 +425,10 @@ function Kolor:toggle_grid(on)
       if self.grid_on then
         self:grid_key(x,y,z)
       end
+    end
+  else
+    if self.toggle_callback ~= nil then 
+      self.toggle_callback()
     end
   end
 end
@@ -953,8 +959,18 @@ function Kolor:key_press(row,col,on)
   end
   if on then
     self.pressed_buttons[row..","..col]=true
+    if row == 8 and col == 2 then 
+      self.kill_timer = current_time()
+    end
   else
     self.pressed_buttons[row..","..col]=nil
+    if row == 8 and col == 2 then 
+      self.kill_timer = current_time() - self.kill_timer
+      if self.kill_timer > 2 then 
+        self:toggle_grid(false)
+      end
+      self.kill_timer = 0
+    end
   end
 
   if row==5 and col==1 and self.effect_id_selected>0 and on then
