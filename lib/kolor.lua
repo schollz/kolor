@@ -207,6 +207,7 @@ function Kolor:new(args)
   -- grid specific
   o.g=grid.connect()
   o.g.key=function(x,y,z)
+    print("kolor ",x,y,z)
     if o.grid_on then
       o:grid_key(x,y,z)
     end
@@ -414,6 +415,15 @@ function Kolor:toggle_grid(on)
     self.grid_on = not self.grid_on 
   else
     self.grid_on = on 
+  end
+  if self.grid_on then 
+    self.g=grid.connect()
+    self.g.key=function(x,y,z)
+      print("kolor grid: ",x,y,z)
+      if self.grid_on then
+        self:grid_key(x,y,z)
+      end
+    end
   end
 end
 
