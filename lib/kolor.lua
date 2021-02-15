@@ -202,7 +202,6 @@ function Kolor:new(args)
   local o=setmetatable({},{__index=Kolor})
   local args=args==nil and {} or args
   o.grid_on = args.grid_on == nil and true or args.grid_on
-  o.toggle_callback = args.toggle_callback 
 
   -- initiate the grid
   -- grid specific
@@ -431,6 +430,10 @@ function Kolor:toggle_grid(on)
       self.toggle_callback()
     end
   end
+end
+
+function Kolor:set_toggle_callback(fn)
+  self.toggle_callback = fn
 end
 
 function Kolor:show_text(text,time)
@@ -966,7 +969,7 @@ function Kolor:key_press(row,col,on)
     self.pressed_buttons[row..","..col]=nil
     if row == 8 and col == 2 then 
       self.kill_timer = current_time() - self.kill_timer
-      if self.kill_timer > 2 then 
+      if self.kill_timer > 0.5 then 
         self:toggle_grid(false)
       end
       self.kill_timer = 0
