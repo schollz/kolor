@@ -203,6 +203,7 @@ function Kolor:new(args)
   local args=args==nil and {} or args
   o.grid_on = args.grid_on == nil and true or args.grid_on
   o.toggleable = args.toggleable == nil and false or args.toggleable
+  o.emit_note_fn = args.emit_note_fn
 
   -- initiate the grid
   -- grid specific
@@ -339,6 +340,9 @@ function Kolor:new(args)
     o.timers[division]={time_last_beat=0,time_next_beat=0}
     o.timers[division].lattice=o.lattice:new_pattern{
       action=function(t)
+        if o.emit_note_fn ~= nil then 
+          emit_note_fn(division)
+        end
         o:emit_note(division)
       end,
       division=1/division
